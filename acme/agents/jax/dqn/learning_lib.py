@@ -96,14 +96,9 @@ class SGDLearner(acme.Learner):
       next_rng_key, rng_key = jax.random.split(state.rng_key)
       # Implements one SGD step of the loss and updates training state
 
-      # should i implement pmap and pmean here?
-      # yes!
-
-
 
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
           state.params, state.target_params, batch, rng_key)
-
 
       grads = jax.lax.pmean(grads, axis_name='num_devices')
       loss = jax.lax.pmean(loss, axis_name='num_devices') # unnecessary for update, useful for logging
@@ -166,6 +161,8 @@ class SGDLearner(acme.Learner):
   def step(self):
     """Takes one SGD step on the learner."""
     batch = next(self._data_iterator)
+
+    import pdb; pdb.set_trace()
 
     self._state, extra = self._sgd_step(self._state, batch)
 

@@ -385,51 +385,6 @@ def process_multiple_batches(
 
 
 
-def process_single_batch_custom(
-    process_one_batch: Callable[[_TrainingState, _TrainingData],
-                                Tuple[_TrainingState, _TrainingAux]],
-    num_batches: int,
-    postprocess_aux: Optional[Callable[[_TrainingAux], _TrainingAux]] = None,
-    num_devices: Optional[int] = 8
-) -> Callable[[_TrainingState, _TrainingData], Tuple[_TrainingState,
-                                                     _TrainingAux]]:
-  """Makes 'process_one_batch' process multiple batches at once.
-
-  Args:
-    process_one_batch: a function that takes 'state' and 'data', and returns
-      'new_state' and 'aux' (for example 'metrics').
-    num_batches: how many batches to process at once
-    postprocess_aux: how to merge the extra information, defaults to taking
-      the mean.
-  Returns:
-    A function with the same interface as 'process_one_batch' which processes
-    multiple batches at once.
-  """
-  assert num_batches == 1
-  assert postprocess_aux != None 
-
-  def _process_one_batch(state, data):
-    data = jax.tree_map(
-        lambda a: jnp.reshape(a, (num_devices, a.shape[0] // num_devices, *a.shape[1:])), data)
-    state, aux = process_one_batch(state, data)
-    return state, postprocess_aux(aux)
-  
-  return _process_one_batch
-
-  # if postprocess_aux is None:
-  #   postprocess_aux = lambda x: jax.tree_map(jnp.mean, x)
-
-  # def _process_multiple_batches(state, data):
-  #   data = jax.tree_map(
-  #       lambda a: jnp.reshape(a, (num_batches, -1, *a.shape[1:])), data)
-
-  #   state, aux = jax.lax.scan(
-  #       process_one_batch, state, data, length=num_batches)
-  #   return state, postprocess_aux(aux)
-
-  return _process_multiple_batches
-
-
 def process_many_batches(
     process_one_batch: Callable[[_TrainingState, _TrainingData],
                                 TrainingStepOutput[_TrainingState]],
