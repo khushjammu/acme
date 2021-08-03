@@ -57,45 +57,15 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     r_t = jnp.clip(transitions.reward, -self.max_abs_reward,
                    self.max_abs_reward).astype(jnp.float32)
 
-    # action = jnp.asarray(transitions.action)
     action = transitions.action
-
-    # num_devices = jax.local_device_count() 
-
-
-    # # reshape action, d_t, r_t
-    # action, d_t, r_t = [
-    #   x.reshape(num_devices, x.shape[0] // num_devices) 
-    #   for x in [action, d_t, r_t]
-    # ]
-
-    # # reshape q_tm1, q_t_value, q_t_selector
-    # q_tm1, q_t_value, q_t_selector = [
-    #   x.reshape((num_devices, x.shape[0] // num_devices, *x.shape[1:])) 
-    #   for x in [q_tm1, q_t_value, q_t_selector]
-    # ]
-
-    # for x in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]: 
-    #   try:
-    #     print(x.shape)
-    #   except AttributeError as e:
-    #     print("FUCK YOU KHUSH")
-    #     print(x)
-    #     raise e
 
 
     # Compute double Q-learning n-step TD-error.
-    # batch_error = jax.pmap(jax.vmap(rlax.double_q_learning))
     batch_error = jax.vmap(rlax.double_q_learning)
-
-    # [256, ...]
-    # [8, 32, ...]
 
     td_error = batch_error(q_tm1, action, r_t, d_t, q_t_value,
                            q_t_selector)
     batch_loss = rlax.huber_loss(td_error, self.huber_loss_parameter)
-    # batch_loss = jnp.reshape(batch_loss, (256,))
-    # print("batch loss proper shape:", batch_loss.shape)
 
     # Importance weighting.
     importance_weights = (1. / probs).astype(jnp.float32)
