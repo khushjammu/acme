@@ -205,14 +205,14 @@ class SGDLearner(acme.Learner):
         rng_key=self.rng_key
     )
 
-    stonks = jax.tree_util.tree_flatten(self._state.params)
+    # stonks = jax.tree_util.tree_flatten(self._state.params)
 
-    print("stonks:", stonks)
-    print("type:", type(stonks))
-    print(jax.tree_util.tree_structure(stonks))
+    # print("stonks:", stonks)
+    # print("type:", type(stonks))
+    # print(jax.tree_util.tree_structure(stonks))
 
-    print("IT WORKED BABY")
-    import sys; sys.exit(-1)
+    # print("IT WORKED BABY")
+    # import sys; sys.exit(-1)
 
   def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
     return [self._state.params] # TODO: fix this so that it only returns a single params
