@@ -30,6 +30,7 @@ import optax
 import reverb
 import rlax
 import typing_extensions
+from copy import deepcopy
 
 
 class ReverbUpdate(NamedTuple):
@@ -162,6 +163,8 @@ class SGDLearner(acme.Learner):
     """Takes one SGD step on the learner."""
     batch = next(self._data_iterator)
 
+    fixed = deepcopy(batch)
+
     def fix(x, num_devices=8):
       if len(x.shape) == 1:
         return x.reshape((num_devices, x.shape[0] // num_devices))
@@ -172,18 +175,18 @@ class SGDLearner(acme.Learner):
     for field in batch.info._fields:
       content = getattr(batch.info, field)
       content = fix(content)
-      setattr(batch.info, field, content)
+      setattr(fixed.info, field, content)
 
     # fix batch.data
     for field in batch.data._fields:
       content = getattr(batch.data, field)
       content = fix(content)
-      setattr(batch.data, field, content)
+      setattr(fixed.data, field, content)
 
-    self._state, extra = self._sgd_step(self._state, batch)
+    self._state, extra = self._sgd_step(self._state, fixed)
 
     if self._replay_client:
-      reverb_update = extra.reverb_update._replace(keys=batch.info.key)
+      reverb_update = extra.reverb_update._replace(keys=fixed.info.key)
       self._async_priority_updater.put(reverb_update)
 
     # Update our counts and record it.
