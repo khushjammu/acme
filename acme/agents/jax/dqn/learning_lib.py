@@ -112,6 +112,8 @@ class SGDLearner(acme.Learner):
 
       # Periodically update target networks.
       steps = state.steps + 1
+
+      # in theory, this should be working with pmap and replicated params out of the box
       target_params = rlax.periodic_update(
           new_params, state.target_params, steps, target_update_period)
       new_training_state = TrainingState(
@@ -148,6 +150,11 @@ class SGDLearner(acme.Learner):
         rng_key=key_state,
     )
 
+    self.n_devices = jax.local_device_count()
+    self._state.params = jax.tree_map(lambda x: jnp.array([x] * n_devices), self._state.params)
+    self._state.target_params = jax.tree_map(lambda x: jnp.array([x] * n_devices), self._state.target_params)
+
+
     # Update replay priorities
     def update_priorities(reverb_update: Optional[ReverbUpdate]) -> None:
       if reverb_update is None or replay_client is None:
@@ -162,12 +169,12 @@ class SGDLearner(acme.Learner):
   def step(self):
     """Takes one SGD step on the learner."""
     batch = next(self._data_iterator)
- 
-    def fix(x, num_devices=8):
+
+    def fix(x, n_devices=self.n_devices):
       if len(x.shape) == 1:
-        return x.reshape((num_devices, x.shape[0] // num_devices))
+        return x.reshape((n_devices, x.shape[0] // n_devices))
       else:
-        return x.reshape((num_devices, x.shape[0] // num_devices, *x.shape[1:])) 
+        return x.reshape((n_devices, x.shape[0] // n_devices, *x.shape[1:])) 
 
     fixed = jax.tree_map(fix, batch)
 
@@ -183,7 +190,7 @@ class SGDLearner(acme.Learner):
     self._logger.write(result)
 
   def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
-    return [self._state.params]
+    return [self._state.params[0]] # just return first device params (should be replicated anyway)
 
   def save(self) -> TrainingState:
     return self._state
