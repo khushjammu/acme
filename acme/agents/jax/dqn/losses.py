@@ -104,7 +104,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     batch_loss = jnp.reshape(batch_loss, (256,))
     print("batch loss proper shape:", batch_loss.shape)
 
-    import sys; sys.exit(-1)
+    # import sys; sys.exit(-1)
 
     # Importance weighting.
     importance_weights = (1. / probs).astype(jnp.float32)
