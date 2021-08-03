@@ -57,10 +57,19 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     r_t = jnp.clip(transitions.reward, -self.max_abs_reward,
                    self.max_abs_reward).astype(jnp.float32)
 
-    action = jnp.stack(transitions.action)
+    action = jnp.asarray(transitions.action)
 
-    print("action:", action, action.shape)
-    print("q_tm1:")
+    # reshape action, d_t, r_t
+    action, d_t, r_t = [
+      x.reshape(8, x.shape[0] // 8) 
+      for x in [action, d_t, r_t]
+    ]
+
+    # reshape q_tm1, q_t_value, q_t_selector
+    q_tm1, q_t_value, q_t_selector = [
+      x.reshape((num_devices, x.shape[0] // num_devices, *x.shape[1:])) 
+      for x in [q_tm1, q_t_value, q_t_selector]
+    ]
 
     # import ray; ray.util.pdb.set_trace()
 
@@ -71,7 +80,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     #   jnp.split(a, 32) for a in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]
     # ]
 
-    for x in [q_tm1, q_t_value, q_t_selector, d_t, r_t]: 
+    for x in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]: 
       try:
         print(x.shape)
       except AttributeError as e:
@@ -79,7 +88,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
         print(x)
         raise e
 
-    import sys; sys.exit(-1)
+    # import sys; sys.exit(-1)
 
     # action = jnp.split(transitions.action, 32)
     # q_tm1 = jnp.split(q_tm1, 32)
@@ -91,7 +100,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
 
 
     # Compute double Q-learning n-step TD-error.
-    batch_error = jax.pmap(jax.pmap(rlax.double_q_learning))
+    batch_error = jax.pmap(jax.vmap(rlax.double_q_learning))
 
     # [256, ...]
     # [8, 32, ...]
