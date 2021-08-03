@@ -121,7 +121,7 @@ class SGDLearner(acme.Learner):
     #   return new_training_state, extra
 
     @functools.partial(jax.pmap, axis_name='num_devices')
-    def sgd_step(params, batch, opt_state):
+    def sgd_step(params, target_params, batch, opt_state):
       next_rng_key, rng_key = jax.random.split(jax.random.PRNGKey(1701))
       # Implements one SGD step of the loss and updates training state
 
@@ -163,24 +163,20 @@ class SGDLearner(acme.Learner):
     initial_params = self.network.init(key_params)
     initial_target_params = self.network.init(key_target)
 
+    # these all have to be arrays so pmap can parallize properly
+    self.params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params)
+    self.target_params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params)
+    self.opt_state = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params))
+
+    self.steps = 0
+
     # self._state = TrainingState(
-    #     params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params),
+    #     params=self.params,
     #     target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
     #     opt_state=optimizer.init(initial_params),
     #     steps=0,
     #     rng_key=key_state,
     # )
-
-    self._state = [TrainingState(
-        params=initial_params,
-        target_params=initial_target_params,
-        opt_state=optimizer.init(initial_params),
-        steps=0,
-        rng_key=key_state,
-    ) for x in range(self.n_devices)]
-
-    self.khush_params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params)
-    self.khush_opt_state = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params))
 
 
     # Update replay priorities
@@ -209,15 +205,19 @@ class SGDLearner(acme.Learner):
     fixed = jax.tree_map(fix, batch)
 
     # self._state, extra = self._sgd_step(self._state, fixed)
-    # grads, loss, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
+    # grads, loss, self.khush_opt_state = self._sgd_step(self.params, fixed, self.khush_opt_state)
 
-    before = deepcopy(self.khush_params)
+    # before = deepcopy(self.params)
 
-    print("before:", before)
+    # print("before:", before)
 
-    self.khush_params, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
+    self.params, self.opt_state = self._sgd_step(self.params, self.target_params, fixed, self.opt_state)
 
-    print("after:", self.khush_params)
+    # print("after:", self.params)
+
+    # update params periodically
+    self.target_params = rlax.periodic_update(self.params, self.target_params, self.steps, self._target_update_period)
+
 
     print("IT WORKED BABY")
     import sys; sys.exit(-1)
