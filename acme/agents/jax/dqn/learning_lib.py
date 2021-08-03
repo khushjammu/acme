@@ -121,8 +121,9 @@ class SGDLearner(acme.Learner):
     #   return new_training_state, extra
 
     @functools.partial(jax.pmap, axis_name='num_devices')
-    def sgd_step(params, target_params, batch, opt_state, rng_key):
-      next_rng_key, rng_key = jax.random.split(rng_key)
+    def sgd_step(params, target_params, batch, opt_state):
+      # todo: make this use the state rng_key?
+      next_rng_key, rng_key = jax.random.split(jax.random.PRNGKey(1701))
       # Implements one SGD step of the loss and updates training state
 
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
