@@ -228,6 +228,8 @@ class SGDLearner(acme.Learner):
 
     extra._replace(metrics=jax.tree_map(jnp.mean, extra.metrics), reverb_update=reverb_update)
 
+    print("extra post update:", extra)
+
 
     if self._replay_client:
       reverb_update = extra.reverb_update._replace(keys=fixed.info.key) # ths might need fixing
