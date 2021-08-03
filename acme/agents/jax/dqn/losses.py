@@ -60,7 +60,9 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     action = jnp.asarray(transitions.action)
 
 
-    # import ray; ray.utils.pdb.set_trace()
+    import ray; ray.utils.pdb.set_trace()
+
+    # int32[256] -> 32 * int32[8]
 
     # reshape everything so it works with pmap and vmap
     action, q_tm1, q_t_value, q_t_selector, d_t, r_t = [
