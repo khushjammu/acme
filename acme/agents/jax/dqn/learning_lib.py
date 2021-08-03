@@ -136,7 +136,7 @@ class SGDLearner(acme.Learner):
       updates, new_opt_state = optimizer.update(grads, opt_state)
       new_params = optax.apply_updates(params, updates)
       
-      return new_params, new_opt_state
+      return new_params, new_opt_state, extras
 
     # def postprocess_aux(extra: LossExtra) -> LossExtra:
     #   reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])),
@@ -211,12 +211,18 @@ class SGDLearner(acme.Learner):
 
     # print("before:", before)
 
-    self.params, self.opt_state = self._sgd_step(self.params, self.target_params, fixed, self.opt_state)
+    self.params, self.opt_state, extras = self._sgd_step(self.params, self.target_params, fixed, self.opt_state)
+
+    print("extras type:", extras)
 
     # print("after:", self.params)
 
     # update params periodically
+    # theoretically works, but need to run it multiple steps and see if it updates
     self.target_params = rlax.periodic_update(self.params, self.target_params, self.steps, self._target_update_period)
+
+    # reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])), extra.reverb_update)
+    # extra._replace(metrics=jax.tree_map(jnp.mean, extra.metrics), reverb_update=reverb_update)
 
 
     print("IT WORKED BABY")
