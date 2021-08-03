@@ -217,7 +217,7 @@ class SGDLearner(acme.Learner):
 
     # update params periodically
     # theoretically works, but need to run it multiple steps and see if it updates
-    target_params = rlax.periodic_update(self.params, self.target_params, self.steps, self._target_update_period)
+    target_params = rlax.periodic_update(self._state.params, self._state.target_params, self._state.steps, self._target_update_period)
 
 
     # first update reshapes it back to pre-pmap dimensions, second was there before so leaving it just in case
