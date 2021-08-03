@@ -185,7 +185,7 @@ class SGDLearner(acme.Learner):
 
     fixed = jax.tree_map(fix, batch)
 
-    import pdb; pdb.set_trace()
+    jax.tree_map(lambda k: print("shape:", k.shape), fixed)
 
     self._state, extra = self._sgd_step(self._state, fixed)
 
