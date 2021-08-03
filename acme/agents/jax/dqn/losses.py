@@ -60,6 +60,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     action = jnp.stack(transitions.action)
 
     print("action:", action, action.shape)
+    print("q_tm1:")
 
     # import ray; ray.util.pdb.set_trace()
 
@@ -70,13 +71,15 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
       jnp.split(a, 32) for a in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]
     ]
 
-    for x in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]: 
+    for x in [q_tm1, q_t_value, q_t_selector, d_t, r_t]: 
       try:
         print(x.shape)
       except AttributeError as e:
         print("FUCK YOU KHUSH")
         print(x)
         raise e
+
+    print(action.shape)
 
     # action = jnp.split(transitions.action, 32)
     # q_tm1 = jnp.split(q_tm1, 32)
