@@ -122,11 +122,11 @@ class SGDLearner(acme.Learner):
 
     @functools.partial(jax.pmap, axis_name='num_devices')
     def sgd_step(params, batch):
-      next_rng_key, rng_key = jax.random.split(state.rng_key)
+      next_rng_key, rng_key = jax.random.split(jax.random.PRNGKey(1701))
       # Implements one SGD step of the loss and updates training state
 
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
-          state.params, state.target_params, batch, rng_key)
+          params, params, batch, rng_key)
 
       grads = jax.lax.pmean(grads, axis_name='num_devices')
       loss = jax.lax.pmean(loss, axis_name='num_devices') # unnecessary for update, useful for logging
@@ -203,8 +203,8 @@ class SGDLearner(acme.Learner):
     fixed = jax.tree_map(fix, batch)
 
     # self._state, extra = self._sgd_step(self._state, fixed)
-    grads, loss = self._sgd_step(self.khush_params, fixed)
-    
+    grads, loss = self._sgd_step(self.khush_params, fixed, jax.tree_map(lambda x: jnp.array([x] * self.n_devices), self.state.))
+
     print("IT WORKED BABY")
     import sys; sys.exit(-1)
 
