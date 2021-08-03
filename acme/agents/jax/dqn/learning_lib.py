@@ -144,13 +144,22 @@ class SGDLearner(acme.Learner):
     key_params, key_target, key_state = jax.random.split(random_key, 3)
     initial_params = self.network.init(key_params)
     initial_target_params = self.network.init(key_target)
-    self._state = TrainingState(
-        params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params),
-        target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
+
+    # self._state = TrainingState(
+    #     params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params),
+    #     target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
+    #     opt_state=optimizer.init(initial_params),
+    #     steps=0,
+    #     rng_key=key_state,
+    # )
+
+    self._state = [TrainingState(
+        params=initial_params,
+        target_params=initial_target_params,
         opt_state=optimizer.init(initial_params),
         steps=0,
         rng_key=key_state,
-    )
+    ) for x in range(self.n_devices)]
 
 
     # Update replay priorities
@@ -188,7 +197,7 @@ class SGDLearner(acme.Learner):
     self._logger.write(result)
 
   def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
-    return [self._state.params[0]] # just return first device params (should be replicated anyway)
+    return [self._state[0].params # just return first device params (should be replicated anyway)
 
   def save(self) -> TrainingState:
     return self._state
