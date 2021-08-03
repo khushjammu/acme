@@ -207,6 +207,7 @@ class SGDLearner(acme.Learner):
 
     stonks = jax.tree_util.tree_flatten(self._state.params)
 
+    print("stonks:", stonks)
     print("type:", type(stonks))
     print(jax.tree_util.tree_structure(stonks))
 
