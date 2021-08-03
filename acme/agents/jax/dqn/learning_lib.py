@@ -138,21 +138,19 @@ class SGDLearner(acme.Learner):
     self._counter = counter or counting.Counter()
     self._logger = logger or loggers.TerminalLogger('learner', time_delta=1.)
 
+    self.n_devices = jax.local_device_count()
+
     # Initialize the network parameters
     key_params, key_target, key_state = jax.random.split(random_key, 3)
     initial_params = self.network.init(key_params)
     initial_target_params = self.network.init(key_target)
     self._state = TrainingState(
-        params=initial_params,
-        target_params=initial_target_params,
+        params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params),
+        target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
         opt_state=optimizer.init(initial_params),
         steps=0,
         rng_key=key_state,
     )
-
-    self.n_devices = jax.local_device_count()
-    self._state.params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), self._state.params)
-    self._state.target_params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), self._state.target_params)
 
 
     # Update replay priorities
