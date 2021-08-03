@@ -121,7 +121,7 @@ class SGDLearner(acme.Learner):
     #   return new_training_state, extra
 
     @functools.partial(jax.pmap, axis_name='num_devices')
-    def sgd_step(params, batch):
+    def sgd_step(params, batch, opt_state):
       next_rng_key, rng_key = jax.random.split(jax.random.PRNGKey(1701))
       # Implements one SGD step of the loss and updates training state
 
@@ -132,6 +132,8 @@ class SGDLearner(acme.Learner):
       loss = jax.lax.pmean(loss, axis_name='num_devices') # unnecessary for update, useful for logging
 
       extra.metrics.update({'total_loss': loss})
+
+      updates, new_opt_state = optimizer.update(grads, state.opt_state)
       
       return grads, loss
 
@@ -180,6 +182,7 @@ class SGDLearner(acme.Learner):
     ) for x in range(self.n_devices)]
 
     self.khush_params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params)
+    self.khush_opt_state = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params))
 
 
     # Update replay priorities
@@ -196,6 +199,11 @@ class SGDLearner(acme.Learner):
   def step(self):
     """Takes one SGD step on the learner."""
     batch = next(self._data_iterator)
+
+    print("optstate:", self.khush_opt_state)
+
+
+    # [batchsize, ...] -> [num_devices, batchsize per device, ...]
 
     def fix(x, n_devices=self.n_devices):
       if len(x.shape) == 1:
