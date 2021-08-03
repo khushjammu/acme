@@ -57,13 +57,21 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     r_t = jnp.clip(transitions.reward, -self.max_abs_reward,
                    self.max_abs_reward).astype(jnp.float32)
 
+    action = transitions.action
+
     # reshape everything so it works with pmap and vmap
-    action = jnp.split(transitions.action, 32)
-    q_tm1 = jnp.split(q_tm1, 32)
-    q_t_value = jnp.split(q_t_value, 32)
-    q_t_selector = jnp.split(q_t_selector, 32)
-    d_t = jnp.split(d_t, 32)
-    r_t = jnp.split(r_t, 32)
+    action, q_tm1, q_t_value, q_t_selector, d_t, r_t = [
+      jnp.split(a, 32) for a in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]
+    ]
+
+    for x in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]: print(x.shape)
+
+    # action = jnp.split(transitions.action, 32)
+    # q_tm1 = jnp.split(q_tm1, 32)
+    # q_t_value = jnp.split(q_t_value, 32)
+    # q_t_selector = jnp.split(q_t_selector, 32)
+    # d_t = jnp.split(d_t, 32)
+    # r_t = jnp.split(r_t, 32)
 
 
 
