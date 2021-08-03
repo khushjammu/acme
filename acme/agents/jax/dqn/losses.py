@@ -43,6 +43,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
       key: networks_lib.PRNGKey,
   ) -> Tuple[jnp.DeviceArray, learning_lib.LossExtra]:
     """Calculate a loss on a single batch of data."""
+    import ray; ray.util.pdb.set_trace()
     del key
     transitions: types.Transition = batch.data
     keys, probs, *_ = batch.info

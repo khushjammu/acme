@@ -416,7 +416,7 @@ class VariableSourceRayWrapper():
 
 if __name__ == "__main__":
   # ray.init(address="auto")
-  ray.init()
+  ray.init(address='auto')
 
   storage = SharedStorage.remote()
   storage.set_info.remote({
