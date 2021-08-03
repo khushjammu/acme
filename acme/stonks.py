@@ -382,15 +382,19 @@ class LearnerRay():
         observations_per_step=self.config.batch_size / self.config.samples_per_insert,
         )
 
-      # if num_steps != 0:
+      print("temporarily overriding num_steps to be 1")
+      num_steps = 1
+
+      if num_steps != 0:
         # save_states.append(self.learner.save().params)
-        # print(f"stepping learner {num_steps}")
+        print(f"stepping learner {num_steps}")
 
       # if step_count > 50:
       #   if str(save_states[0]) == str(save_states[1]):
       #     print("you fuckup")
       #   else:
       #     print("all ok")
+
 
       for _ in range(num_steps):
         self.learner.step()
@@ -442,7 +446,7 @@ if __name__ == "__main__":
   # ray.get(actor.get_params.remote())
 
   # actor.run.remote()
-  learner.run.remote()
+  ray.get(learner.run.remote())
 
   while not ray.get(storage.get_info.remote("terminate")):
     time.sleep(1)

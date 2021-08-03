@@ -374,7 +374,6 @@ def process_multiple_batches(
     postprocess_aux = lambda x: jax.tree_map(jnp.mean, x)
 
   def _process_multiple_batches(state, data):
-    import pdb; pdb.set_trace()
     data = jax.tree_map(
         lambda a: jnp.reshape(a, (num_batches, -1, *a.shape[1:])), data)
 

@@ -153,6 +153,7 @@ class SGDLearner(acme.Learner):
   def step(self):
     """Takes one SGD step on the learner."""
     batch = next(self._data_iterator)
+    import pdb; pdb.set_trace()
     self._state, extra = self._sgd_step(self._state, batch)
 
     if self._replay_client:
