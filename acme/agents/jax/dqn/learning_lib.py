@@ -138,13 +138,16 @@ class SGDLearner(acme.Learner):
     initial_target_params = self.network.init(key_target)
 
     self.rng_key = key_state # this will only ever be `key_state`
+    # params -> [[params], [params]]
 
     self._state = TrainingState(
-        params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params),
-        target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
-        opt_state=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params)),
-        steps=0,
-        rng_key=key_state,
+      params=[[initial_params] for i in range(self.n_devices)],
+      target_params=[[initial_params] for i in range(self.n_devices)]
+      # params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params),
+      # target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
+      opt_state=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params)),
+      steps=0,
+      rng_key=key_state,
     )
 
     # Update replay priorities
