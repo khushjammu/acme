@@ -94,6 +94,9 @@ class SGDLearner(acme.Learner):
                  batch: reverb.ReplaySample) -> Tuple[TrainingState, LossExtra]:
       next_rng_key, rng_key = jax.random.split(state.rng_key)
       # Implements one SGD step of the loss and updates training state
+
+      # should i implement pmap and pmean here?
+      
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
           state.params, state.target_params, batch, rng_key)
       extra.metrics.update({'total_loss': loss})

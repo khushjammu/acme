@@ -57,10 +57,11 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     r_t = jnp.clip(transitions.reward, -self.max_abs_reward,
                    self.max_abs_reward).astype(jnp.float32)
 
-    action = jnp.asarray(transitions.action)
+    action = jnp.stack(transitions.action)
 
+    print("action:", action, action.shape)
 
-    import ray; ray.util.pdb.set_trace()
+    # import ray; ray.util.pdb.set_trace()
 
     # int32[256] -> 32 * int32[8]
 
