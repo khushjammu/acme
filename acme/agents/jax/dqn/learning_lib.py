@@ -210,7 +210,14 @@ class SGDLearner(acme.Learner):
 
     # self._state, extra = self._sgd_step(self._state, fixed)
     # grads, loss, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
+
+    before = deepcopy(self.khush_params)
+
     self.khush_params, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
+
+
+    if (before == self.khush_params).all():
+      print("fuck u khush")
 
     print("IT WORKED BABY")
     import sys; sys.exit(-1)
