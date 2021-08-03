@@ -67,9 +67,9 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     # int32[256] -> 32 * int32[8]
 
     # reshape everything so it works with pmap and vmap
-    action, q_tm1, q_t_value, q_t_selector, d_t, r_t = [
-      jnp.split(a, 32) for a in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]
-    ]
+    # action, q_tm1, q_t_value, q_t_selector, d_t, r_t = [
+    #   jnp.split(a, 32) for a in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]
+    # ]
 
     for x in [q_tm1, q_t_value, q_t_selector, d_t, r_t]: 
       try:
@@ -79,7 +79,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
         print(x)
         raise e
 
-    print(action.shape)
+    import sys; sys.exit(-1)
 
     # action = jnp.split(transitions.action, 32)
     # q_tm1 = jnp.split(q_tm1, 32)
