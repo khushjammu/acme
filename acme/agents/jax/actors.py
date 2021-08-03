@@ -26,6 +26,7 @@ from acme.jax import utils
 from acme.jax import variable_utils
 import dm_env
 import jax
+import ray
 
 # Useful type aliases.
 RecurrentState = TypeVar('RecurrentState')
@@ -111,9 +112,10 @@ class FeedForwardActor(core.Actor):
       self,
       policy: FeedForwardPolicy,
       random_key: network_lib.PRNGKey,
-      variable_client: variable_utils.VariableClient,
+      # variable_client: variable_utils.VariableClient, # DISABLING VARIABLE CLIENT
       adder: Optional[adders.Adder] = None,
       has_extras: bool = False,
+      storage = None # TYPE THIS !!
       # backend: Optional[str] = 'cpu',
   ):
     """Initializes a feed forward actor.
@@ -147,11 +149,11 @@ class FeedForwardActor(core.Actor):
     self._policy = jax.jit(batched_policy)#, backend=backend)
 
     self._adder = adder
-    self._client = variable_client
+    self._storage = storage
 
   def select_action(self,
                     observation: network_lib.Observation) -> types.NestedArray:
-    result, self._random_key = self._policy(self._client.params,
+    result, self._random_key = self._policy(ray.get(self._storage.get_info.remote("params")),
                                             self._random_key, observation)
     if self._has_extras:
       action, self._extras = result
@@ -168,7 +170,9 @@ class FeedForwardActor(core.Actor):
       self._adder.add(action, next_timestep, extras=self._extras)
 
   def update(self, wait: bool = False):
-    self._client.update(wait)
+    # DISABLING THE VARIABLE CLIENT
+    # self._client.update(wait)
+    pass
 
 
 # TODO(raveman): Migrate all users of RecurrentActor to GenericActor and

@@ -40,24 +40,6 @@ from acme import wrappers
 import bsuite
 import copy
 
-
-# def make_environment(evaluation: bool = False,
-#                      level: str = 'BreakoutNoFrameskip-v4') -> dm_env.Environment:
-#   env = gym.make(level, full_action_space=True)
-
-#   max_episode_len = 108_000 if evaluation else 50_000
-
-#   return wrappers.wrap_all(env, [
-#       wrappers.GymAtariAdapter,
-#       functools.partial(
-#           wrappers.AtariWrapper,
-#           to_float=True,
-#           max_episode_len=max_episode_len,
-#           zero_discount_on_life_loss=True,
-#       ),
-#       wrappers.SinglePrecisionWrapper,
-#   ])
-
 # print("temporarily force jax to use CPU for debugging")
 # jax.config.update('jax_platform_name', "cpu")
 
@@ -74,28 +56,49 @@ print("MIN OBS:", MIN_OBSERVATIONS)
 
 NUM_STEPS_ACTOR = 20 # taken from agent_test
 
+HEAD_IP = "35.223.237.60"
 
 ### REVERB AND ENV
 
-# demo_env = make_environment()
-# spec = specs.make_environment_spec(demo_env)
+def make_environment(evaluation: bool = False,
+                     level: str = 'BreakoutNoFrameskip-v4') -> dm_env.Environment:
+  env = gym.make(level, full_action_space=True) # obs_type="ram"
 
-def make_environment():
+  max_episode_len = 108_000 if evaluation else 50_000
 
-  raw_environment = bsuite.load_from_id('catch/0')
-  return wrappers.SinglePrecisionWrapper(raw_environment)
+  return wrappers.wrap_all(env, [
+      wrappers.GymAtariAdapter,
+      functools.partial(
+          wrappers.AtariWrapper,
+          to_float=True,
+          max_episode_len=max_episode_len,
+          zero_discount_on_life_loss=True,
+      ),
+      wrappers.SinglePrecisionWrapper,
+  ])
+
+demo_env = make_environment()
+spec = specs.make_environment_spec(demo_env)
+
+# def make_environment():
+
+#   raw_environment = bsuite.load_from_id('catch/0')
+#   return wrappers.SinglePrecisionWrapper(raw_environment)
 
 
-spec = specs.make_environment_spec(make_environment())
+# spec = specs.make_environment_spec(make_environment())
 
 #### ACTORS AND LEARNERS
 
-# @ray.remote
-@ray.remote(resources={"tpu": 1})
+# @ray.remote(resources={"tpu": 1})
+@ray.remote(num_cpus=1)
 class ActorRay():
-  def __init__(self, config, address, learner, environment_maker, storage, verbose=False):
+  def __init__(self, config, address, learner, environment_maker, storage, actor_id, verbose=False):
     environment = environment_maker()
+
     self.verbose = verbose
+    self.actor_id = actor_id
+    self.storage = storage
 
     key_learner, key_actor = jax.random.split(jax.random.PRNGKey(config.seed))
 
@@ -105,6 +108,7 @@ class ActorRay():
     def create_policy():
       def network(x):
         model = hk.Sequential([
+            networks_lib.AtariTorso(),
             hk.Flatten(),
             hk.nets.MLP([50, 50, spec.actions.num_values])
         ])
@@ -125,14 +129,15 @@ class ActorRay():
       return policy
     policy = create_policy()
 
-    self._variable_wrapper = VariableSourceRayWrapper(learner)
-    self._variable_client = variable_utils.VariableClient(self._variable_wrapper, '')
+    # self._variable_wrapper = VariableSourceRayWrapper(learner) # DISABLING VARIABLE CLIENT
+    # self._variable_client = variable_utils.VariableClient(self._variable_wrapper, '') # DISABLING VARIABLE CLIENT
 
     self._actor = actors.FeedForwardActor(
       policy=policy,
       random_key=key_actor,
-      variable_client=self._variable_client, # need to write a custom wrapper around learner so it calls .remote
-      adder=adder)
+      # variable_client=self._variable_client, # need to write a custom wrapper around learner so it calls .remote
+      adder=adder,
+      storage=self.storage)
       # backend="tpu_driver")
 
     class Printer():
@@ -147,11 +152,8 @@ class ActorRay():
 
     self._environment = environment
     self._should_update = True
-    self.storage = storage
 
-    self.old = copy.deepcopy(self.get_params())
-
-    print("actor instantiated")
+    print(f"Actor #{self.actor_id}: instantiated")
 
 
   @staticmethod
@@ -161,7 +163,7 @@ class ActorRay():
   # only used to "initialize" params
   def get_params(self):
     if self.verbose: print("getting params")
-    data = self._variable_client.params
+    data = self.storage.get_info.remote("params")
     if self.verbose: print("params gotten!")
     return data
 
@@ -172,10 +174,15 @@ class ActorRay():
     episode_returns = []
     episode_params = []
     while not ray.get(self.storage.get_info.remote("terminate")):
+      # jax.profiler.start_trace("/tmp/tensorboard")
       result = self.run_episode()
-      if len(episode_returns) == 100:
-        print("100-ep avg return: ", sum([e["episode_return"].item() for e in episode_returns])/100)
-        episode_returns = []
+      # jax.profiler.stop_trace()
+
+      print(f"Actor #{self.actor_id}: ", result)
+      # if len(episode_returns) == 10:
+        # print(result)
+        # print("10-ep avg return: ", sum([e["episode_return"].item() for e in episode_returns])/10)
+        # episode_returns = []
       # if result["episodes"] % 100:
       #   print(result)
       #   episode_params.append(self.get_params())
@@ -188,7 +195,6 @@ class ActorRay():
 
       steps += result["episode_length"]
       if steps == 0: self._logger.write(result)
-      episode_returns.append(result)
       self.storage.set_info.remote({
         "steps": steps
         })
@@ -225,6 +231,7 @@ class ActorRay():
     while not timestep.last():
       # Generate an action from the agent's policy and step the environment.
       # print("flag 2.25")
+      # NOTE: select_action already pulls params from remote storage.
       action = self._actor.select_action(timestep.observation)
       # print("flag 2.5")
       timestep = self._environment.step(action)
@@ -233,8 +240,9 @@ class ActorRay():
       self._actor.observe(action, next_timestep=timestep)
       # print("flag 3")
 
-      if self._should_update:
-        self._actor.update(wait=True)
+      # if self._should_update and episode_steps % 10:
+      #   self._actor.update(wait=False) # makes variable updates asynchronous
+      #   NOTE: select_action already pulls params from remote storage.
 
       # Book-keeping.
       episode_steps += 1
@@ -286,7 +294,7 @@ class SharedStorage:
             raise TypeError
 
 # @ray.remote
-@ray.remote(resources={"tpu": 1})
+@ray.remote(num_cpus=32, resources={"tpu": 1})
 class LearnerRay():
   def __init__(self, config, address, storage, verbose=False):
     self.verbose = verbose
@@ -301,6 +309,7 @@ class LearnerRay():
     def create_network():
       def network(x):
         model = hk.Sequential([
+            networks_lib.AtariTorso(),
             hk.Flatten(),
             hk.nets.MLP([50, 50, spec.actions.num_values])
         ])
@@ -318,8 +327,8 @@ class LearnerRay():
     network = create_network()
 
     optimizer = optax.chain(
-        optax.clip_by_global_norm(config.max_gradient_norm),
-        optax.adam(config.learning_rate),
+      optax.clip_by_global_norm(config.max_gradient_norm),
+      optax.adam(config.learning_rate),
     )
 
     self.client = reverb.Client(address)
@@ -341,6 +350,7 @@ class LearnerRay():
       iterator=data_iterator,
       replay_client=self.client
     )
+
     if self.verbose: print("learner instantiated")
 
 
@@ -362,6 +372,9 @@ class LearnerRay():
     """This has to be called by a wrapper which uses the .remote postfix."""
     return self.learner.get_variables(names)
 
+  def get_params(self):
+    return self.learner.save().params
+
   def run(self):
     # we just keep count of the number of steps it's trained on
     step_count = 0
@@ -373,7 +386,7 @@ class LearnerRay():
 
     # save_states = []
 
-    while step_count < 2000:
+    while step_count < 3e8:
 
       num_steps = self._calculate_num_learner_steps(
         num_observations=self.client.server_info()["priority_table"].current_size,
@@ -381,7 +394,17 @@ class LearnerRay():
         observations_per_step=self.config.batch_size / self.config.samples_per_insert,
         )
 
-      # if num_steps != 0:
+      if num_steps != 0:
+        for _ in range(num_steps):
+          self.learner.step()
+
+        self.storage.set_info.remote(
+          {
+            "params": copy.deepcopy(self.learner.save().params)
+          }
+        )
+
+        # print("j doin some lurnin")
         # save_states.append(self.learner.save().params)
         # print(f"stepping learner {num_steps}")
 
@@ -391,8 +414,7 @@ class LearnerRay():
       #   else:
       #     print("all ok")
 
-      for _ in range(num_steps):
-        self.learner.step()
+      
 
       step_count += num_steps
 
@@ -431,15 +453,49 @@ if __name__ == "__main__":
       discount=config.discount,
   )
 
-  learner = LearnerRay.options(max_concurrency=2).remote(config, "34.136.41.200:8000", storage, verbose=True)
+  learner = LearnerRay.options(max_concurrency=128).remote(config, f"{HEAD_IP}:8000", storage, verbose=True)
   # variable_wrapper = VariableSourceRayWrapper(learner)
-  actor = ActorRay.options().remote(config, "34.136.41.200:8000", learner, make_environment, storage, verbose=True)
+
+  # setting an initial param value
+
+  storage.set_info.remote({
+    "params": copy.deepcopy(ray.get(learner.get_params.remote()))
+  })
+
+  actors = [
+    ActorRay.options().remote(
+      config,
+      f"{HEAD_IP}:8000",
+      learner,
+      make_environment,
+      storage,
+      actor_id,
+      verbose=True
+    )
+    for actor_id in range(32)
+  ]
+
+  # actors.append(ActorRay.options(resources={"tpu": 1}).remote(
+  #     config,
+  #     f"{HEAD_IP}:8000",
+  #     learner,
+  #     make_environment,
+  #     storage,
+  #     "tpu1",
+  #     verbose=True
+  #   ))
 
   # we need to do this because you need to make sure the learner is initialized
   # before the actor can start self-play (it retrieves the params from learner)
-  ray.get(actor.get_params.remote())
+  # ray.get([a.get_params.remote() for a in actors])
+  
 
-  actor.run.remote()
+  # for i, a in enumerate(actors):
+  #   print(f"actor #{i} getting params")
+  #   ray.get(a.get_params.remote())
+
+  for a in actors:
+    a.run.remote()
   learner.run.remote()
 
   while not ray.get(storage.get_info.remote("terminate")):
