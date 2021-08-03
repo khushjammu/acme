@@ -203,7 +203,8 @@ class SGDLearner(acme.Learner):
     fixed = jax.tree_map(fix, batch)
 
     # self._state, extra = self._sgd_step(self._state, fixed)
-    grads, loss = self.khush_params(self.khush_params, fixed)
+    grads, loss = self._sgd_step(self.khush_params, fixed)
+    
     print("IT WORKED BABY")
     import sys; sys.exit(-1)
 
