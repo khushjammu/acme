@@ -121,8 +121,8 @@ class SGDLearner(acme.Learner):
     #   return new_training_state, extra
 
     @functools.partial(jax.pmap, axis_name='num_devices')
-    def sgd_step(params, target_params, batch, opt_state):
-      next_rng_key, rng_key = jax.random.split(jax.random.PRNGKey(1701))
+    def sgd_step(params, target_params, batch, opt_state, rng_key):
+      next_rng_key, rng_key = jax.random.split(rng_key)
       # Implements one SGD step of the loss and updates training state
 
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
@@ -169,6 +169,8 @@ class SGDLearner(acme.Learner):
     self.opt_state = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params))
     self.steps = 0
 
+    self.rng_key = random_key # this will only every be the rng key used for instantiation
+
     # self._state = TrainingState(
     #     params=self.params,
     #     target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
@@ -207,32 +209,23 @@ class SGDLearner(acme.Learner):
     # self._state, extra = self._sgd_step(self._state, fixed)
     # grads, loss, self.khush_opt_state = self._sgd_step(self.params, fixed, self.khush_opt_state)
 
-    # before = deepcopy(self.params)
-
-    # print("before:", before)
-
     self.params, self.opt_state, extra = self._sgd_step(self.params, self.target_params, fixed, self.opt_state)
 
-    # print("extras type:", extra)
-
-    # print("after:", self.params)
+    self.steps += 1
 
     # update params periodically
     # theoretically works, but need to run it multiple steps and see if it updates
     self.target_params = rlax.periodic_update(self.params, self.target_params, self.steps, self._target_update_period)
 
 
-    # first update reshapes it back to pre-pmap dimensions, second was there before
+    # first update reshapes it back to pre-pmap dimensions, second was there before so leaving it just in case
     reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (a.shape[0]*a.shape[1])), extra.reverb_update)
     reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])), reverb_update)
 
     extra = extra._replace(metrics=jax.tree_map(jnp.mean, extra.metrics), reverb_update=reverb_update)
 
-    # print("extra post update:", extra)
-
 
     if self._replay_client:
-      # reverb_update = extra.reverb_update._replace(keys=extra.keys) # ths might need fixing
       self._async_priority_updater.put(reverb_update)
 
 
@@ -244,8 +237,17 @@ class SGDLearner(acme.Learner):
     result.update(extra.metrics)
     self._logger.write(result)
 
+    # update internal state representation
+    self._state = TrainingState(
+        params=self.params,
+        target_params=self.target_params,
+        opt_state=self.opt_state,
+        steps=self.steps,
+        rng_key=self.rng_key
+    )
+
   def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
-    return [self._state[0].params] # just return first device params (should be replicated anyway)
+    return [self._state.params] # TODO: fix this so that it only returns a single params
 
   def save(self) -> TrainingState:
     return self._state
