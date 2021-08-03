@@ -205,7 +205,7 @@ class SGDLearner(acme.Learner):
         rng_key=self.rng_key
     )
 
-
+    print("type:", type(self._state.params))
     print(jax.tree_util.tree_structure(self._state.params))
 
     print("IT WORKED BABY")
