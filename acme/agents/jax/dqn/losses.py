@@ -57,8 +57,22 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     r_t = jnp.clip(transitions.reward, -self.max_abs_reward,
                    self.max_abs_reward).astype(jnp.float32)
 
+    # reshape everything so it works with pmap and vmap
+    q_tm1 = jnp.split(q_tm1, 32)
+    q_t_value = jnp.split(q_t_value, 32)
+    q_t_selector = jnp.split(q_t_selector, 32)
+    d_t = jnp.split(d_t, 32)
+    r_t = jnp.split(r_t, 32)
+
+
+
     # Compute double Q-learning n-step TD-error.
-    batch_error = jax.pmap(jax.vmap(rlax.double_q_learning))
+    batch_error = jax.pmap(jax.pmap(rlax.double_q_learning))
+
+    # [256, ...]
+    # [8, 32, ...]
+    # pmap(vmap())
+
     td_error = batch_error(q_tm1, transitions.action, r_t, d_t, q_t_value,
                            q_t_selector)
     batch_loss = rlax.huber_loss(td_error, self.huber_loss_parameter)
