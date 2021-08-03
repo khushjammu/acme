@@ -91,12 +91,39 @@ class SGDLearner(acme.Learner):
     self._loss = jax.jit(functools.partial(loss_fn, self.network))
 
     # SGD performs the loss, optimizer update and periodic target net update.
+    # @functools.partial(jax.pmap, axis_name='num_devices')
+    # def sgd_step(state: TrainingState,
+    #              batch: reverb.ReplaySample) -> Tuple[TrainingState, LossExtra]:
+    #   next_rng_key, rng_key = jax.random.split(state.rng_key)
+    #   # Implements one SGD step of the loss and updates training state
+
+
+    #   (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
+    #       state.params, state.target_params, batch, rng_key)
+
+    #   grads = jax.lax.pmean(grads, axis_name='num_devices')
+    #   loss = jax.lax.pmean(loss, axis_name='num_devices') # unnecessary for update, useful for logging
+
+    #   extra.metrics.update({'total_loss': loss})
+
+    #   # Apply the optimizer updates
+    #   updates, new_opt_state = optimizer.update(grads, state.opt_state)
+    #   new_params = optax.apply_updates(state.params, updates)
+
+    #   # Periodically update target networks.
+    #   steps = state.steps + 1
+
+    #   # in theory, this should be working with pmap and replicated params out of the box
+    #   target_params = rlax.periodic_update(
+    #       new_params, state.target_params, steps, target_update_period)
+    #   new_training_state = TrainingState(
+    #       new_params, target_params, new_opt_state, steps, next_rng_key)
+    #   return new_training_state, extra
+
     @functools.partial(jax.pmap, axis_name='num_devices')
-    def sgd_step(state: TrainingState,
-                 batch: reverb.ReplaySample) -> Tuple[TrainingState, LossExtra]:
+    def sgd_step(params, batch):
       next_rng_key, rng_key = jax.random.split(state.rng_key)
       # Implements one SGD step of the loss and updates training state
-
 
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
           state.params, state.target_params, batch, rng_key)
@@ -105,20 +132,8 @@ class SGDLearner(acme.Learner):
       loss = jax.lax.pmean(loss, axis_name='num_devices') # unnecessary for update, useful for logging
 
       extra.metrics.update({'total_loss': loss})
-
-      # Apply the optimizer updates
-      updates, new_opt_state = optimizer.update(grads, state.opt_state)
-      new_params = optax.apply_updates(state.params, updates)
-
-      # Periodically update target networks.
-      steps = state.steps + 1
-
-      # in theory, this should be working with pmap and replicated params out of the box
-      target_params = rlax.periodic_update(
-          new_params, state.target_params, steps, target_update_period)
-      new_training_state = TrainingState(
-          new_params, target_params, new_opt_state, steps, next_rng_key)
-      return new_training_state, extra
+      
+      return grads, loss
 
     def postprocess_aux(extra: LossExtra) -> LossExtra:
       reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])),
@@ -161,6 +176,8 @@ class SGDLearner(acme.Learner):
         rng_key=key_state,
     ) for x in range(self.n_devices)]
 
+    self.khush_params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params)
+
 
     # Update replay priorities
     def update_priorities(reverb_update: Optional[ReverbUpdate]) -> None:
@@ -185,9 +202,10 @@ class SGDLearner(acme.Learner):
 
     fixed = jax.tree_map(fix, batch)
 
-    jax.tree_map(lambda k: print("shape:", k.shape), fixed)
-
-    self._state, extra = self._sgd_step(self._state, fixed)
+    # self._state, extra = self._sgd_step(self._state, fixed)
+    grads, loss = self.khush_params(self.khush_params, fixed)
+    print("IT WORKED BABY")
+    import sys; sys.exit(-1)
 
     if self._replay_client:
       reverb_update = extra.reverb_update._replace(keys=fixed.info.key)
