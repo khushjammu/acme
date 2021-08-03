@@ -142,10 +142,11 @@ class SGDLearner(acme.Learner):
 
     self._state = TrainingState(
       params=[[initial_params] for i in range(self.n_devices)],
-      target_params=[[initial_params] for i in range(self.n_devices)],
+      target_params=[[target_params] for i in range(self.n_devices)],
+      opt_state=[[optimizer.init(initial_params)] for i in range(self.n_devices)],
       # params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params),
       # target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
-      opt_state=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params)),
+      # opt_state=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params)),
       steps=0,
       rng_key=key_state,
     )
