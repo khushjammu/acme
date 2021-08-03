@@ -211,9 +211,9 @@ class SGDLearner(acme.Learner):
 
     # print("before:", before)
 
-    self.params, self.opt_state, extras = self._sgd_step(self.params, self.target_params, fixed, self.opt_state)
+    self.params, self.opt_state, extra = self._sgd_step(self.params, self.target_params, fixed, self.opt_state)
 
-    print("extras type:", extras)
+    print("extras type:", extra)
 
     # print("after:", self.params)
 
@@ -221,16 +221,21 @@ class SGDLearner(acme.Learner):
     # theoretically works, but need to run it multiple steps and see if it updates
     self.target_params = rlax.periodic_update(self.params, self.target_params, self.steps, self._target_update_period)
 
-    # reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])), extra.reverb_update)
-    # extra._replace(metrics=jax.tree_map(jnp.mean, extra.metrics), reverb_update=reverb_update)
+
+    # first update reshapes it back to pre-pmap dimensions, second was there before
+    reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (a.shape[0]*a.shape[1])), extra.reverb_update)
+    reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])), extra.reverb_update)
+
+    extra._replace(metrics=jax.tree_map(jnp.mean, extra.metrics), reverb_update=reverb_update)
+
+
+    if self._replay_client:
+      reverb_update = extra.reverb_update._replace(keys=fixed.info.key) # ths might need fixing
+      self._async_priority_updater.put(reverb_update)
 
 
     print("IT WORKED BABY")
     import sys; sys.exit(-1)
-
-    if self._replay_client:
-      reverb_update = extra.reverb_update._replace(keys=fixed.info.key)
-      self._async_priority_updater.put(reverb_update)
 
     # Update our counts and record it.
     result = self._counter.increment(steps=1)
