@@ -233,7 +233,10 @@ class SGDLearner(acme.Learner):
 
     if self._replay_client:
       # reverb_update = extra.reverb_update._replace(keys=extra.keys) # ths might need fixing
-      self._async_priority_updater.put(reverb_update)
+      self._replay_client.mutate_priorities(
+            table=adders.DEFAULT_PRIORITY_TABLE,
+            updates=dict(zip(reverb_update.keys, reverb_update.priorities)))
+      # self._async_priority_updater.put(reverb_update)
 
 
     print("IT WORKED BABY")
