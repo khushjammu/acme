@@ -185,6 +185,8 @@ class SGDLearner(acme.Learner):
 
     fixed = jax.tree_map(fix, batch)
 
+    import pdb; pdb.set_trace()
+
     self._state, extra = self._sgd_step(self._state, fixed)
 
     if self._replay_client:
