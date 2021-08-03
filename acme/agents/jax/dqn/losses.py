@@ -59,9 +59,12 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
 
     action = jnp.asarray(transitions.action)
 
+    num_devices = jax.local_device_count() 
+
+
     # reshape action, d_t, r_t
     action, d_t, r_t = [
-      x.reshape(8, x.shape[0] // 8) 
+      x.reshape(num_devices, x.shape[0] // num_devices) 
       for x in [action, d_t, r_t]
     ]
 
