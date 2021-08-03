@@ -133,9 +133,10 @@ class SGDLearner(acme.Learner):
 
       extra.metrics.update({'total_loss': loss})
 
-      updates, new_opt_state = optimizer.update(grads, state.opt_state)
+      updates, new_opt_state = optimizer.update(grads, opt_state)
+      new_params = optax.apply_updates(params, updates)
       
-      return grads, loss
+      return new_params, new_opt_state
 
     # def postprocess_aux(extra: LossExtra) -> LossExtra:
     #   reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])),
@@ -214,7 +215,8 @@ class SGDLearner(acme.Learner):
     fixed = jax.tree_map(fix, batch)
 
     # self._state, extra = self._sgd_step(self._state, fixed)
-    grads, loss = self._sgd_step(self.khush_params, fixed)
+    # grads, loss, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
+    self.khush_params, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
 
     print("loss:", loss)
 
