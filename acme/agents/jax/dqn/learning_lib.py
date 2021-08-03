@@ -197,7 +197,7 @@ class SGDLearner(acme.Learner):
     self._logger.write(result)
 
   def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
-    return [self._state[0].params # just return first device params (should be replicated anyway)
+    return [self._state[0].params] # just return first device params (should be replicated anyway)
 
   def save(self) -> TrainingState:
     return self._state
