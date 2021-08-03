@@ -145,11 +145,8 @@ class SGDLearner(acme.Learner):
     #       metrics=jax.tree_map(jnp.mean, extra.metrics),
     #       reverb_update=reverb_update)
 
-    def postprocess_aux(extra: LossExtra) -> LossExtra:
-      return extra
-
-    sgd_step = utils.process_multiple_batches(sgd_step, num_sgd_steps_per_step,
-                                              postprocess_aux)
+    # sgd_step = utils.process_multiple_batches(sgd_step, num_sgd_steps_per_step,
+    #                                           postprocess_aux)
     # self._sgd_step = jax.jit(sgd_step)
     self._sgd_step = sgd_step
 
@@ -201,9 +198,6 @@ class SGDLearner(acme.Learner):
     """Takes one SGD step on the learner."""
     batch = next(self._data_iterator)
 
-    print("optstate:", self.khush_opt_state)
-
-
     # [batchsize, ...] -> [num_devices, batchsize per device, ...]
 
     def fix(x, n_devices=self.n_devices):
@@ -217,8 +211,6 @@ class SGDLearner(acme.Learner):
     # self._state, extra = self._sgd_step(self._state, fixed)
     # grads, loss, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
     self.khush_params, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
-
-    print("loss:", loss)
 
     print("IT WORKED BABY")
     import sys; sys.exit(-1)
