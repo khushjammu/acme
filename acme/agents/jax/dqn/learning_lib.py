@@ -163,25 +163,13 @@ class SGDLearner(acme.Learner):
     """Takes one SGD step on the learner."""
     batch = next(self._data_iterator)
 
-    fixed = deepcopy(batch)
-
     def fix(x, num_devices=8):
       if len(x.shape) == 1:
         return x.reshape((num_devices, x.shape[0] // num_devices))
       else:
         return x.reshape((num_devices, x.shape[0] // num_devices, *x.shape[1:])) 
 
-    # fix batch.info
-    for field in batch.info._fields:
-      content = getattr(batch.info, field)
-      content = fix(content)
-      setattr(fixed.info, field, content)
-
-    # fix batch.data
-    for field in batch.data._fields:
-      content = getattr(batch.data, field)
-      content = fix(content)
-      setattr(fixed.data, field, content)
+    fixed = jax.tree_map(fix, batch)
 
     self._state, extra = self._sgd_step(self._state, fixed)
 
