@@ -213,7 +213,7 @@ class SGDLearner(acme.Learner):
 
     self.params, self.opt_state, extra = self._sgd_step(self.params, self.target_params, fixed, self.opt_state)
 
-    print("extras type:", extra)
+    # print("extras type:", extra)
 
     # print("after:", self.params)
 
