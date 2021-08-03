@@ -216,7 +216,7 @@ class SGDLearner(acme.Learner):
     self.khush_params, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
 
 
-    if (jax.tree_util.tree_flatten(before[0])[0] == jax.tree_util.tree_flatten(self.khush_params[0])[0]).all():
+    if (jax.tree_util.tree_flatten(before[0]) == jax.tree_util.tree_flatten(self.khush_params[0])).all():
       print("fuck u khush")
 
     print("IT WORKED BABY")
