@@ -101,6 +101,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     td_error = batch_error(q_tm1, action, r_t, d_t, q_t_value,
                            q_t_selector)
     batch_loss = rlax.huber_loss(td_error, self.huber_loss_parameter)
+    batch_loss = jnp.reshape(batch_loss, (256,))
     print("batch loss proper shape:", batch_loss.shape)
 
     import sys; sys.exit(-1)
