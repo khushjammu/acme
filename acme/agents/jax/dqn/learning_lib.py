@@ -232,7 +232,7 @@ class SGDLearner(acme.Learner):
 
 
     if self._replay_client:
-      reverb_update = extra.reverb_update._replace(keys=extra.keys) # ths might need fixing
+      # reverb_update = extra.reverb_update._replace(keys=extra.keys) # ths might need fixing
       self._async_priority_updater.put(reverb_update)
 
 
