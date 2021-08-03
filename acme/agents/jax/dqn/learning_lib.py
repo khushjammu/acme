@@ -213,11 +213,11 @@ class SGDLearner(acme.Learner):
 
     before = deepcopy(self.khush_params)
 
-    print("before:", before[0])
+    print("before:", before)
 
     self.khush_params, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
 
-    print("after:", self.khush_params[0])
+    print("after:", self.khush_params)
 
     print("IT WORKED BABY")
     import sys; sys.exit(-1)
