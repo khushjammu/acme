@@ -162,7 +162,7 @@ class SGDLearner(acme.Learner):
   def step(self):
     """Takes one SGD step on the learner."""
     batch = next(self._data_iterator)
-
+ 
     def fix(x, num_devices=8):
       if len(x.shape) == 1:
         return x.reshape((num_devices, x.shape[0] // num_devices))
