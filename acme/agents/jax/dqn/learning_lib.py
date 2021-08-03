@@ -136,7 +136,7 @@ class SGDLearner(acme.Learner):
       updates, new_opt_state = optimizer.update(grads, opt_state)
       new_params = optax.apply_updates(params, updates)
       
-      return new_params, new_opt_state, extras
+      return new_params, new_opt_state, extra
 
     # def postprocess_aux(extra: LossExtra) -> LossExtra:
     #   reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])),
