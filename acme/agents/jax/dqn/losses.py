@@ -60,7 +60,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     action = jnp.asarray(transitions.action)
 
 
-    import ray; ray.utils.pdb.set_trace()
+    import ray; ray.util.pdb.set_trace()
 
     # int32[256] -> 32 * int32[8]
 
