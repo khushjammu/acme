@@ -81,7 +81,6 @@ NUM_STEPS_ACTOR = 20 # taken from agent_test
 # spec = specs.make_environment_spec(demo_env)
 
 def make_environment():
-
   raw_environment = bsuite.load_from_id('catch/0')
   return wrappers.SinglePrecisionWrapper(raw_environment)
 
@@ -421,19 +420,19 @@ if __name__ == "__main__":
   # note that we use `reverb_replay.address` which isn't supported by acme 
   # out of the box, so we'll either have to use something else or patch
   # the source
-  reverb_replay = replay.make_reverb_prioritized_nstep_replay(
-      environment_spec=spec,
-      n_step=config.n_step,
-      batch_size=config.batch_size,
-      max_replay_size=config.max_replay_size,
-      min_replay_size=config.min_replay_size,
-      priority_exponent=config.priority_exponent,
-      discount=config.discount,
-  )
+  # reverb_replay = replay.make_reverb_prioritized_nstep_replay(
+  #     environment_spec=spec,
+  #     n_step=config.n_step,
+  #     batch_size=config.batch_size,
+  #     max_replay_size=config.max_replay_size,
+  #     min_replay_size=config.min_replay_size,
+  #     priority_exponent=config.priority_exponent,
+  #     discount=config.discount,
+  # )
 
-  learner = LearnerRay.options(max_concurrency=2).remote(config, "34.136.41.200:8000", storage, verbose=True)
+  learner = LearnerRay.options(max_concurrency=2).remote(config, "localhost:8000", storage, verbose=True)
   # variable_wrapper = VariableSourceRayWrapper(learner)
-  actor = ActorRay.options().remote(config, "34.136.41.200:8000", learner, make_environment, storage, verbose=True)
+  actor = ActorRay.options().remote(config, "localhost:8000", learner, make_environment, storage, verbose=True)
 
   # we need to do this because you need to make sure the learner is initialized
   # before the actor can start self-play (it retrieves the params from learner)
