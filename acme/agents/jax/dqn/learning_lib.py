@@ -151,8 +151,8 @@ class SGDLearner(acme.Learner):
     )
 
     self.n_devices = jax.local_device_count()
-    self._state.params = jax.tree_map(lambda x: jnp.array([x] * n_devices), self._state.params)
-    self._state.target_params = jax.tree_map(lambda x: jnp.array([x] * n_devices), self._state.target_params)
+    self._state.params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), self._state.params)
+    self._state.target_params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), self._state.target_params)
 
 
     # Update replay priorities
