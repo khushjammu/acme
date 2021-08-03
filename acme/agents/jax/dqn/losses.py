@@ -57,55 +57,42 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     r_t = jnp.clip(transitions.reward, -self.max_abs_reward,
                    self.max_abs_reward).astype(jnp.float32)
 
-    # action = jnp.asarray(transitions.action)
-    action = transitions.action
+    action = jnp.asarray(transitions.action)
+    # action = transitions.action
 
     num_devices = jax.local_device_count() 
 
 
     # reshape action, d_t, r_t
-    # action, d_t, r_t = [
-    #   x.reshape(num_devices, x.shape[0] // num_devices) 
-    #   for x in [action, d_t, r_t]
-    # ]
+    action, d_t, r_t = [
+      x.reshape(num_devices, x.shape[0] // num_devices) 
+      for x in [action, d_t, r_t]
+    ]
 
     # reshape q_tm1, q_t_value, q_t_selector
-    # q_tm1, q_t_value, q_t_selector = [
-    #   x.reshape((num_devices, x.shape[0] // num_devices, *x.shape[1:])) 
-    #   for x in [q_tm1, q_t_value, q_t_selector]
-    # ]
+    q_tm1, q_t_value, q_t_selector = [
+      x.reshape((num_devices, x.shape[0] // num_devices, *x.shape[1:])) 
+      for x in [q_tm1, q_t_value, q_t_selector]
+    ]
 
     # import ray; ray.util.pdb.set_trace()
 
     # int32[256] -> 32 * int32[8]
 
-    # reshape everything so it works with pmap and vmap
-    # action, q_tm1, q_t_value, q_t_selector, d_t, r_t = [
-    #   jnp.split(a, 32) for a in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]
-    # ]
+    for x in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]: 
+      try:
+        print(x.shape)
+      except AttributeError as e:
+        print("FUCK YOU KHUSH")
+        print(x)
+        raise e
 
-    # for x in [action, q_tm1, q_t_value, q_t_selector, d_t, r_t]: 
-    #   try:
-    #     print(x.shape)
-    #   except AttributeError as e:
-    #     print("FUCK YOU KHUSH")
-    #     print(x)
-    #     raise e
-
-    # import sys; sys.exit(-1)
-
-    # action = jnp.split(transitions.action, 32)
-    # q_tm1 = jnp.split(q_tm1, 32)
-    # q_t_value = jnp.split(q_t_value, 32)
-    # q_t_selector = jnp.split(q_t_selector, 32)
-    # d_t = jnp.split(d_t, 32)
-    # r_t = jnp.split(r_t, 32)
 
 
 
     # Compute double Q-learning n-step TD-error.
-    # batch_error = jax.pmap(jax.vmap(rlax.double_q_learning))
-    batch_error = jax.vmap(rlax.double_q_learning)
+    batch_error = jax.pmap(jax.vmap(rlax.double_q_learning))
+    # batch_error = jax.vmap(rlax.double_q_learning)
 
     # [256, ...]
     # [8, 32, ...]
