@@ -135,12 +135,15 @@ class SGDLearner(acme.Learner):
       
       return grads, loss
 
+    # def postprocess_aux(extra: LossExtra) -> LossExtra:
+    #   reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])),
+    #                                extra.reverb_update)
+    #   return extra._replace(
+    #       metrics=jax.tree_map(jnp.mean, extra.metrics),
+    #       reverb_update=reverb_update)
+
     def postprocess_aux(extra: LossExtra) -> LossExtra:
-      reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])),
-                                   extra.reverb_update)
-      return extra._replace(
-          metrics=jax.tree_map(jnp.mean, extra.metrics),
-          reverb_update=reverb_update)
+      return extra
 
     sgd_step = utils.process_multiple_batches(sgd_step, num_sgd_steps_per_step,
                                               postprocess_aux)
