@@ -165,20 +165,20 @@ class SGDLearner(acme.Learner):
     initial_target_params = self.network.init(key_target)
 
     # these all have to be arrays so pmap can parallize properly
-    self.params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params)
-    self.target_params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params)
-    self.opt_state = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params))
-    self.steps = 0
+    # self.params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params)
+    # self.target_params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params)
+    # self.opt_state = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params))
+    # self.steps = 0
 
-    self.rng_key = random_key # this will only every be the rng key used for instantiation
+    self.rng_key = key_state # this will only ever be `key_state`
 
-    # self._state = TrainingState(
-    #     params=self.params,
-    #     target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
-    #     opt_state=optimizer.init(initial_params),
-    #     steps=0,
-    #     rng_key=key_state,
-    # )
+    self._state = TrainingState(
+        params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params),
+        target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params),
+        opt_state=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params)),
+        steps=0,
+        rng_key=key_state,
+    )
 
 
     # Update replay priorities
@@ -210,13 +210,14 @@ class SGDLearner(acme.Learner):
     # self._state, extra = self._sgd_step(self._state, fixed)
     # grads, loss, self.khush_opt_state = self._sgd_step(self.params, fixed, self.khush_opt_state)
 
-    self.params, self.opt_state, extra = self._sgd_step(self.params, self.target_params, fixed, self.opt_state)
+    # self.params, self.opt_state, extra = self._sgd_step(self.params, self.target_params, fixed, self.opt_state)
+    new_params, new_opt_state, extra = self._sgd_step(self._state.params, self._state.target_params, fixed, self._state.opt_state)
 
-    self.steps += 1
+    steps = self._state.steps + 1
 
     # update params periodically
     # theoretically works, but need to run it multiple steps and see if it updates
-    self.target_params = rlax.periodic_update(self.params, self.target_params, self.steps, self._target_update_period)
+    target_params = rlax.periodic_update(self.params, self.target_params, self.steps, self._target_update_period)
 
 
     # first update reshapes it back to pre-pmap dimensions, second was there before so leaving it just in case
@@ -230,9 +231,6 @@ class SGDLearner(acme.Learner):
       self._async_priority_updater.put(reverb_update)
 
 
-    print("IT WORKED BABY")
-    import sys; sys.exit(-1)
-
     # Update our counts and record it.
     result = self._counter.increment(steps=1)
     result.update(extra.metrics)
@@ -240,12 +238,15 @@ class SGDLearner(acme.Learner):
 
     # update internal state representation
     self._state = TrainingState(
-        params=self.params,
-        target_params=self.target_params,
-        opt_state=self.opt_state,
-        steps=self.steps,
+        params=new_params,
+        target_params=target_params,
+        opt_state=new_opt_state,
+        steps=steps,
         rng_key=self.rng_key
     )
+
+    print("IT WORKED BABY")
+    import sys; sys.exit(-1)
 
   def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
     return [self._state.params] # TODO: fix this so that it only returns a single params
