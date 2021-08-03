@@ -213,11 +213,11 @@ class SGDLearner(acme.Learner):
 
     before = deepcopy(self.khush_params)
 
+    print("before:", before[0])
+
     self.khush_params, self.khush_opt_state = self._sgd_step(self.khush_params, fixed, self.khush_opt_state)
 
-
-    if (jax.tree_util.tree_flatten(before[0]) == jax.tree_util.tree_flatten(self.khush_params[0])).all():
-      print("fuck u khush")
+    print("after:", self.khush_params[0])
 
     print("IT WORKED BABY")
     import sys; sys.exit(-1)
