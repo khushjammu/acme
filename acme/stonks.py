@@ -90,7 +90,8 @@ spec = specs.make_environment_spec(make_environment())
 #### ACTORS AND LEARNERS
 
 # @ray.remote
-@ray.remote(resources={"tpu": 1})
+# @ray.remote(resources={"tpu": 1})
+@ray.remote
 class ActorRay():
   def __init__(self, config, address, learner, environment_maker, storage, verbose=False):
     environment = environment_maker()
@@ -285,7 +286,8 @@ class SharedStorage:
             raise TypeError
 
 # @ray.remote
-@ray.remote(resources={"tpu": 1})
+# @ray.remote(resources={"tpu": 1})
+@ray.remote
 class LearnerRay():
   def __init__(self, config, address, storage, verbose=False):
     self.verbose = verbose
@@ -409,7 +411,8 @@ class VariableSourceRayWrapper():
     return ray.get(self.source.get_variables.remote(names))
 
 if __name__ == "__main__":
-  ray.init(address="auto")
+  # ray.init(address="auto")
+  ray.init()
 
   storage = SharedStorage.remote()
   storage.set_info.remote({
@@ -432,13 +435,13 @@ if __name__ == "__main__":
 
   learner = LearnerRay.options(max_concurrency=2).remote(config, "localhost:8000", storage, verbose=True)
   # variable_wrapper = VariableSourceRayWrapper(learner)
-  actor = ActorRay.options().remote(config, "localhost:8000", learner, make_environment, storage, verbose=True)
+  # actor = ActorRay.options().remote(config, "localhost:8000", learner, make_environment, storage, verbose=True)
 
   # we need to do this because you need to make sure the learner is initialized
   # before the actor can start self-play (it retrieves the params from learner)
-  ray.get(actor.get_params.remote())
+  # ray.get(actor.get_params.remote())
 
-  actor.run.remote()
+  # actor.run.remote()
   learner.run.remote()
 
   while not ray.get(storage.get_info.remote("terminate")):
