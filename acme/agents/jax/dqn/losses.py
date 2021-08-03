@@ -88,8 +88,6 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
         raise e
 
 
-
-
     # Compute double Q-learning n-step TD-error.
     batch_error = jax.pmap(jax.vmap(rlax.double_q_learning))
     # batch_error = jax.vmap(rlax.double_q_learning)
