@@ -43,7 +43,6 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
       key: networks_lib.PRNGKey,
   ) -> Tuple[jnp.DeviceArray, learning_lib.LossExtra]:
     """Calculate a loss on a single batch of data."""
-    import ray; ray.util.pdb.set_trace()
     del key
     transitions: types.Transition = batch.data
     keys, probs, *_ = batch.info
@@ -59,7 +58,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
                    self.max_abs_reward).astype(jnp.float32)
 
     # Compute double Q-learning n-step TD-error.
-    batch_error = jax.vmap(rlax.double_q_learning)
+    batch_error = jax.pmap(rlax.double_q_learning)
     td_error = batch_error(q_tm1, transitions.action, r_t, d_t, q_t_value,
                            q_t_selector)
     batch_loss = rlax.huber_loss(td_error, self.huber_loss_parameter)
