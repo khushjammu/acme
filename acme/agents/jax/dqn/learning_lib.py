@@ -167,7 +167,6 @@ class SGDLearner(acme.Learner):
     self.params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_params)
     self.target_params = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), initial_target_params)
     self.opt_state = jax.tree_map(lambda x: jnp.array([x] * self.n_devices), optimizer.init(initial_params))
-
     self.steps = 0
 
     # self._state = TrainingState(
@@ -194,6 +193,7 @@ class SGDLearner(acme.Learner):
     """Takes one SGD step on the learner."""
     batch = next(self._data_iterator)
 
+    # reshaping of batch for pmap compatibility
     # [batchsize, ...] -> [num_devices, batchsize per device, ...]
 
     def fix(x, n_devices=self.n_devices):
@@ -233,10 +233,7 @@ class SGDLearner(acme.Learner):
 
     if self._replay_client:
       # reverb_update = extra.reverb_update._replace(keys=extra.keys) # ths might need fixing
-      self._replay_client.mutate_priorities(
-            table=adders.DEFAULT_PRIORITY_TABLE,
-            updates=dict(zip(reverb_update.keys, reverb_update.priorities)))
-      # self._async_priority_updater.put(reverb_update)
+      self._async_priority_updater.put(reverb_update)
 
 
     print("IT WORKED BABY")
