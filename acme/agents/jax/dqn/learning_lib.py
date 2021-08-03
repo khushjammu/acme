@@ -226,7 +226,7 @@ class SGDLearner(acme.Learner):
     reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (a.shape[0]*a.shape[1])), extra.reverb_update)
     reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])), reverb_update)
 
-    extra._replace(metrics=jax.tree_map(jnp.mean, extra.metrics), reverb_update=reverb_update)
+    extra = extra._replace(metrics=jax.tree_map(jnp.mean, extra.metrics), reverb_update=reverb_update)
 
     print("extra post update:", extra)
 
