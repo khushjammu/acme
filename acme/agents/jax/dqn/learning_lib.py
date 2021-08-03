@@ -181,7 +181,6 @@ class SGDLearner(acme.Learner):
     # theoretically works, but need to run it multiple steps and see if it updates
     target_params = rlax.periodic_update(self._state.params, self._state.target_params, self._state.steps, self._target_update_period)
 
-
     # reshape back to pre-pmap dimensions (otherwise not the right shape for insertion to reverb)
     reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (a.shape[0]*a.shape[1])), extra.reverb_update)
     
@@ -189,10 +188,8 @@ class SGDLearner(acme.Learner):
     reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (-1, *a.shape[2:])), reverb_update)
     extra = extra._replace(metrics=jax.tree_map(jnp.mean, extra.metrics), reverb_update=reverb_update)
 
-
     if self._replay_client:
       self._async_priority_updater.put(reverb_update)
-
 
     # Update our counts and record it.
     result = self._counter.increment(steps=1)
@@ -208,8 +205,8 @@ class SGDLearner(acme.Learner):
         rng_key=self.rng_key
     )
 
-    print("IT WORKED BABY")
-    import sys; sys.exit(-1)
+    # print("IT WORKED BABY")
+    # import sys; sys.exit(-1)
 
   def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
     return [self._state.params] # TODO: fix this so that it only returns a single params
