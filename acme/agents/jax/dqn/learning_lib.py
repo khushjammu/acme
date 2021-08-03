@@ -90,15 +90,24 @@ class SGDLearner(acme.Learner):
     self._loss = jax.jit(functools.partial(loss_fn, self.network))
 
     # SGD performs the loss, optimizer update and periodic target net update.
+    @functools.partial(jax.pmap, axis_name='num_devices')
     def sgd_step(state: TrainingState,
                  batch: reverb.ReplaySample) -> Tuple[TrainingState, LossExtra]:
       next_rng_key, rng_key = jax.random.split(state.rng_key)
       # Implements one SGD step of the loss and updates training state
 
       # should i implement pmap and pmean here?
-      
+      # yes!
+
+
+
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
           state.params, state.target_params, batch, rng_key)
+
+
+      grads = jax.lax.pmean(grads, axis_name='num_devices')
+      loss = jax.lax.pmean(loss, axis_name='num_devices') # unnecessary for update, useful for logging
+
       extra.metrics.update({'total_loss': loss})
 
       # Apply the optimizer updates
@@ -122,7 +131,8 @@ class SGDLearner(acme.Learner):
 
     sgd_step = utils.process_multiple_batches(sgd_step, num_sgd_steps_per_step,
                                               postprocess_aux)
-    self._sgd_step = jax.jit(sgd_step)
+    # self._sgd_step = jax.jit(sgd_step)
+    self._sgd_step = sgd_step
 
     # Internalise agent components
     self._data_iterator = utils.prefetch(data_iterator)
