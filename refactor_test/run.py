@@ -389,7 +389,7 @@ class LearnerRay():
 if __name__ == '__main__':
   ray.init(address="auto")
 
-  if flags.force_cpu: jax.config.update('jax_platform_name', "cpu")
+  if FLAGS.force_cpu: jax.config.update('jax_platform_name', "cpu")
 
   storage = SharedStorage.remote()
   storage.set_info.remote({
@@ -409,7 +409,7 @@ if __name__ == '__main__':
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
-    enable_checkpointing=flags.enable_checkpointing,
+    enable_checkpointing=FLAGS.enable_checkpointing,
     verbose=True
   )
 
@@ -417,8 +417,8 @@ if __name__ == '__main__':
   ray.get(learner.get_variables.remote(""))
 
   # load the initial checkpoint if relevant
-  if flags.initial_checkpoint:
-    ray.get(learner.load_checkpoint.remote(flags.initial_checkpoint_path))
+  if FLAGS.initial_checkpoint:
+    ray.get(learner.load_checkpoint.remote(FLAGS.initial_checkpoint_path))
 
   actors = [ActorRay.remote(
     "localhost:8000", 
@@ -426,13 +426,13 @@ if __name__ == '__main__':
     storage,
     verbose=True,
     id=i
-  ) for i in range(flags.num_actors)] # 50
+  ) for i in range(FLAGS.num_actors)] # 50
 
   [a.run.remote() for a in actors]
 
   # actor.run.remote()
   # learner.run.remote(total_learning_steps=200)
-  learner.run.remote(total_learning_steps=flags.total_learning_steps)
+  learner.run.remote(total_learning_steps=FLAGS.total_learning_steps)
 
 
   while not ray.get(storage.get_info.remote("terminate")):
