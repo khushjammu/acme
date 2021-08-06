@@ -64,12 +64,12 @@ from config import DQNConfig
 # jax.config.update('jax_platform_name', "cpu")
 parser = argparse.ArgumentParser(description='Run some stonks.')
 
-parser.add_argument('total_learning_steps', type=float, default=2e8 ,help='Number of training steps to run.')
-parser.add_argument('num_actors', type=int, default=5,help='Number of actors to run.')
-parser.add_argument("force_cpu", help="Force all workers to use CPU.", action="store_true")
-parser.add_argument("enable_checkpointing", help="Learner will checkpoint at preconfigured intervals.", action="store_true")
-parser.add_argument("initial_checkpoint", help="Learner will load from initial checkpoint before training.", action="store_true")
-parser.add_argument("initial_checkpoint_path", type=str, default="initial_checkpoint", help="Initial checkpoint for learner. `initial_checkpoint` must be True.")
+parser.add_argument('--total_learning_steps', type=float, default=2e8 ,help='Number of training steps to run.')
+parser.add_argument('--num_actors', type=int, default=5,help='Number of actors to run.')
+parser.add_argument("--force_cpu", help="Force all workers to use CPU.", action="store_true")
+parser.add_argument("--enable_checkpointing", help="Learner will checkpoint at preconfigured intervals.", action="store_true")
+parser.add_argument("--initial_checkpoint", help="Learner will load from initial checkpoint before training.", action="store_true")
+parser.add_argument("--initial_checkpoint_path", type=str, default="initial_checkpoint", help="Initial checkpoint for learner. `initial_checkpoint` must be True.")
 
 
 # flags.DEFINE_integer('total_learning_steps', 2e8, 'Number of training steps to run.')
