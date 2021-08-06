@@ -218,3 +218,14 @@ class SGDLearner(acme.Learner):
 
   def restore(self, state: TrainingState):
     self._state = state
+
+  def restore_from_single_weights(self, weights):
+    """Restores the params from a single-device version (aka output of get_variables)."""
+    self._state = TrainingState(
+        params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), weights),
+        target_params=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), weights),
+        opt_state=jax.tree_map(lambda x: jnp.array([x] * self.n_devices), weights),
+        steps=self._state.steps,
+        rng_key=self._state.rng_key
+    )
+

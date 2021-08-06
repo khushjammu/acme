@@ -334,6 +334,16 @@ class LearnerRay():
     if self._verbose: print("Learner: checkpoint saved successfully.")
     return True # todo: can we remove this?
 
+  def load_checkpoint(self, path):
+    with open(path, 'rb') as f:
+      weights = pickle.load(f)
+
+    self._learner.restore_from_single_weights(weights)
+
+    if self._verbose: print("Learner: checkpoint restored successfully.")
+
+    # once we've loaded the weights, wtf do we do with them
+
   def run(self, total_learning_steps: int = 2e8):
     if self._verbose: print("Learner: starting training.")
 
@@ -392,7 +402,8 @@ if __name__ == '__main__':
   # important to force the learner onto TPU
   ray.get(learner.get_variables.remote(""))
 
-  ray.get(learner.save_checkpoint.remote())
+  # ray.get(learner.save_checkpoint.remote())
+  ray.get(learner.load_checkpoint.remote("/home/aryavohra/temp/acme/refactor_test/checkpoint"))
 
   # actors = [ActorRay.remote(
   #   "localhost:8000", 
