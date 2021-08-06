@@ -55,12 +55,22 @@ import gym
 from acme import wrappers
 import uuid
 import pickle
+from absl import flags
 
 from variable_utils import RayVariableClient
 from environment_loop import CustomEnvironmentLoop
 from config import DQNConfig
 
-jax.config.update('jax_platform_name', "cpu")
+# jax.config.update('jax_platform_name', "cpu")
+flags.DEFINE_integer('total_learning_steps', 2e8, 'Number of training steps to run.')
+flags.DEFINE_integer('num_actors', 5, 'Number of actors to run.')
+flags.DEFINE_bool('force_cpu', False, 'Force all workers to use CPU.')
+
+flags.DEFINE_bool('enable_checkpointing', False, 'Learner will checkpoint at preconfigured intervals.')
+flags.DEFINE_bool('initial_checkpoint', False, 'Learner will load from initial checkpoint before training.')
+flags.DEFINE_string('initial_checkpoint_path', "initial_checkpoint", 'Initial checkpoint for learner. `initial_checkpoint` must be True.')
+
+FLAGS = flags.FLAGS
 
 config = DQNConfig(
   learning_rate=625e-7,
@@ -270,8 +280,9 @@ class ActorRay():
 
 @ray.remote # max_concurrency=1 + N(cacher nodes)
 class LearnerRay():
-  def __init__(self, reverb_address, shared_storage, verbose=False):
+  def __init__(self, reverb_address, shared_storage, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
+    self._enable_checkpointing = enable_checkpointing
     self._shared_storage = shared_storage
     self._client = reverb.Client(reverb_address)
 
@@ -318,18 +329,15 @@ class LearnerRay():
     """This has to be called by a wrapper which uses the .remote postfix."""
     return self._learner.get_variables(names)
 
-  def save_checkpoint(self):
+  def save_checkpoint(self, path):
     weights_to_save = self._learner.get_variables("")
-    # print("gon save:", weights_to_save)
 
     # path = "/home/aryavohra/temp/acme/refactor_test/checkpoint"
-    path = "checkpoint"
+    # path = "checkpoint"
 
     # todo: checkpoint_directory
     with open(path, 'wb') as f:
       pickle.dump(weights_to_save, f)
-
-    # jnp.save(, weights_to_save) 
 
     if self._verbose: print("Learner: checkpoint saved successfully.")
     return True # todo: can we remove this?
@@ -365,6 +373,9 @@ class LearnerRay():
         self._learner.step()
         steps_completed += 1
 
+        if self._enable_checkpointing and (steps_completed % config.checkpoint_interval == 0):
+          self.save_checkpoint(f"checkpoint-{steps_completed}.pickle")
+
         # todo: add evaluation
         # perhaps make a coordinator which runs learner for x steps, then calls an eval actor?
         # if steps_completed % config.eval_interval == 0:
@@ -377,6 +388,8 @@ class LearnerRay():
 
 if __name__ == '__main__':
   ray.init(address="auto")
+
+  if flags.force_cpu: jax.config.update('jax_platform_name', "cpu")
 
   storage = SharedStorage.remote()
   storage.set_info.remote({
@@ -396,39 +409,31 @@ if __name__ == '__main__':
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
+    enable_checkpointing=flags.enable_checkpointing
     verbose=True
   )
 
   # important to force the learner onto TPU
   ray.get(learner.get_variables.remote(""))
 
-  # ray.get(learner.save_checkpoint.remote())
-  old_params = ray.get(learner.get_variables.remote(""))
-  ray.get(learner.load_checkpoint.remote("/home/aryavohra/acme/refactor_test/checkpoint"))
-  new_params = ray.get(learner.get_variables.remote(""))
+  # load the initial checkpoint if relevant
+  if flags.initial_checkpoint:
+    ray.get(learner.load_checkpoint.remote(flags.initial_checkpoint_path))
 
-  assert old_params != new_params, "no checkpoint update took place"
+  actors = [ActorRay.remote(
+    "localhost:8000", 
+    learner, 
+    storage,
+    verbose=True,
+    id=i
+  ) for i in range(flags.num_actors)] # 50
 
-  if old_params != new_params:
-    print("yipee ")
-
-
-
-  # actors = [ActorRay.remote(
-  #   "localhost:8000", 
-  #   learner, 
-  #   storage,
-  #   verbose=True,
-  #   id=i
-  # ) for i in range(1)] # 50
-
-  # [a.run.remote() for a in actors]
+  [a.run.remote() for a in actors]
 
   # actor.run.remote()
   # learner.run.remote(total_learning_steps=200)
-  # learner.run.remote()
+  learner.run.remote(total_learning_steps=flags.total_learning_steps)
 
-  # TODO: test the learner's steps n shit
 
   while not ray.get(storage.get_info.remote("terminate")):
     time.sleep(1)
