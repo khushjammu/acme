@@ -319,6 +319,7 @@ class LearnerRay():
 
   def save_checkpoint(self):
     weights_to_save = self._learner.get_variables("")
+    print("gon save:", weights_to_save)
 
     # todo: checkpoint_directory
     jnp.save("/home/aryavohra/temp/acme/refactor_test/checkpoint", weights_to_save) 
