@@ -63,7 +63,7 @@ from config import DQNConfig
 jax.config.update('jax_platform_name', "cpu")
 
 config = DQNConfig(
-  learning_rate=1e-3,
+  learning_rate=625e-7,
   # samples_per_insert=0.5
 )
 
@@ -193,7 +193,7 @@ class SharedStorage():
         else:
             raise TypeError
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class ActorRay():
   """Glorified wrapper for environment loop."""
   
@@ -402,8 +402,8 @@ if __name__ == '__main__':
   # important to force the learner onto TPU
   ray.get(learner.get_variables.remote(""))
 
-  # ray.get(learner.save_checkpoint.remote())
-  ray.get(learner.load_checkpoint.remote("/home/aryavohra/temp/acme/refactor_test/checkpoint"))
+  ray.get(learner.save_checkpoint.remote())
+  # ray.get(learner.load_checkpoint.remote("/home/aryavohra/temp/acme/refactor_test/checkpoint"))
 
   # actors = [ActorRay.remote(
   #   "localhost:8000", 
@@ -411,7 +411,7 @@ if __name__ == '__main__':
   #   storage,
   #   verbose=True,
   #   id=i
-  # ) for i in range(1)] # 32
+  # ) for i in range(1)] # 50
 
   # [a.run.remote() for a in actors]
 
