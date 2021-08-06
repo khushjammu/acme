@@ -129,7 +129,7 @@ def make_adder(reverb_client):
   """Creates a reverb adder."""
   return adders.NStepTransitionAdder(reverb_client, config.n_step, config.discount)
 
-def make_learner(network, optimizer, data_iterator, reverb_client, random_key, logger=None):
+def make_learner(network, optimizer, data_iterator, reverb_client, random_key, logger=None, checkpoint=None):
   # TODO: add a sexy logger here
   learner = learning.DQNLearner(
     network=network,
@@ -214,7 +214,6 @@ class ActorRay():
 
 
     # print("A - flag 1")
-# 
     # todo: make this proper splitting and everything
     random_key=jax.random.PRNGKey(1701)
 
@@ -318,6 +317,15 @@ class LearnerRay():
     """This has to be called by a wrapper which uses the .remote postfix."""
     return self._learner.get_variables(names)
 
+  def save_checkpoint(self):
+    weights_to_save = self._learner.get_variables("")
+
+    # todo: checkpoint_directory
+    jnp.save("checkpoint", weights_to_save) 
+
+    if self._verbose: print("Learner: checkpoint saved successfully.")
+    return True # todo: can we remove this?
+
   def run(self, total_learning_steps: int = 2e8):
     if self._verbose: print("Learner: starting training.")
 
@@ -376,19 +384,21 @@ if __name__ == '__main__':
   # important to force the learner onto TPU
   ray.get(learner.get_variables.remote(""))
 
-  actors = [ActorRay.remote(
-    "localhost:8000", 
-    learner, 
-    storage,
-    verbose=True,
-    id=i
-  ) for i in range(32)]
+  ray.get(learner.save_checkpoint.remote())
 
-  [a.run.remote() for a in actors]
+  # actors = [ActorRay.remote(
+  #   "localhost:8000", 
+  #   learner, 
+  #   storage,
+  #   verbose=True,
+  #   id=i
+  # ) for i in range(1)] # 32
+
+  # [a.run.remote() for a in actors]
 
   # actor.run.remote()
   # learner.run.remote(total_learning_steps=200)
-  learner.run.remote()
+  # learner.run.remote()
 
   # TODO: test the learner's steps n shit
 
