@@ -409,6 +409,10 @@ if __name__ == '__main__':
 
   assert old_params != new_params, "no checkpoint update took place"
 
+  if old_params != new_params:
+    print("yipee ")
+
+
 
   # actors = [ActorRay.remote(
   #   "localhost:8000", 
