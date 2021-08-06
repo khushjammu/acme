@@ -83,7 +83,8 @@ parser.add_argument("--initial_checkpoint_path", type=str, default="initial_chec
 # FLAGS = flags.FLAGS
 
 config = DQNConfig(
-  learning_rate=625e-7,
+  learning_rate=5e-4,
+  # learning_rate=625e-7,
   # samples_per_insert=0.5
 )
 
