@@ -70,8 +70,6 @@ flags.DEFINE_bool('enable_checkpointing', False, 'Learner will checkpoint at pre
 flags.DEFINE_bool('initial_checkpoint', False, 'Learner will load from initial checkpoint before training.')
 flags.DEFINE_string('initial_checkpoint_path', "initial_checkpoint", 'Initial checkpoint for learner. `initial_checkpoint` must be True.')
 
-FLAGS = flags.FLAGS
-
 config = DQNConfig(
   learning_rate=625e-7,
   # samples_per_insert=0.5
@@ -388,6 +386,8 @@ class LearnerRay():
 
 if __name__ == '__main__':
   ray.init(address="auto")
+
+  FLAGS = flags.FLAGS
 
   if FLAGS.force_cpu: jax.config.update('jax_platform_name', "cpu")
 
