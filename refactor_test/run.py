@@ -55,20 +55,32 @@ import gym
 from acme import wrappers
 import uuid
 import pickle
-from absl import flags
+import argparse
 
 from variable_utils import RayVariableClient
 from environment_loop import CustomEnvironmentLoop
 from config import DQNConfig
 
 # jax.config.update('jax_platform_name', "cpu")
-flags.DEFINE_float('total_learning_steps', 2e8, 'Number of training steps to run.')
-flags.DEFINE_integer('num_actors', 5, 'Number of actors to run.')
-flags.DEFINE_bool('force_cpu', False, 'Force all workers to use CPU.')
+parser = argparse.ArgumentParser(description='Run some stonks.')
 
-flags.DEFINE_bool('enable_checkpointing', False, 'Learner will checkpoint at preconfigured intervals.')
-flags.DEFINE_bool('initial_checkpoint', False, 'Learner will load from initial checkpoint before training.')
-flags.DEFINE_string('initial_checkpoint_path', "initial_checkpoint", 'Initial checkpoint for learner. `initial_checkpoint` must be True.')
+parser.add_argument('total_learning_steps', type=float, default=2e8 ,help='Number of training steps to run.')
+parser.add_argument('num_actors', type=int, default=5,help='Number of actors to run.')
+parser.add_argument("force_cpu", help="Force all workers to use CPU.", action="store_true")
+parser.add_argument("enable_checkpointing", help="Learner will checkpoint at preconfigured intervals.", action="store_true")
+parser.add_argument("initial_checkpoint", help="Learner will load from initial checkpoint before training.", action="store_true")
+parser.add_argument("initial_checkpoint_path", type=str, default="initial_checkpoint", help="Initial checkpoint for learner. `initial_checkpoint` must be True.")
+
+
+# flags.DEFINE_integer('total_learning_steps', 2e8, 'Number of training steps to run.')
+# flags.DEFINE_integer('num_actors', 5, 'Number of actors to run.')
+# flags.DEFINE_bool('force_cpu', False, 'Force all workers to use CPU.')
+
+# flags.DEFINE_bool('enable_checkpointing', False, 'Learner will checkpoint at preconfigured intervals.')
+# flags.DEFINE_bool('initial_checkpoint', False, 'Learner will load from initial checkpoint before training.')
+# flags.DEFINE_string('initial_checkpoint_path', "initial_checkpoint", 'Initial checkpoint for learner. `initial_checkpoint` must be True.')
+
+# FLAGS = flags.FLAGS
 
 config = DQNConfig(
   learning_rate=625e-7,
@@ -387,9 +399,9 @@ class LearnerRay():
 if __name__ == '__main__':
   ray.init(address="auto")
 
-  FLAGS = flags.FLAGS
+  args = parser.parse_args()
 
-  if FLAGS.force_cpu: jax.config.update('jax_platform_name', "cpu")
+  if args.force_cpu: jax.config.update('jax_platform_name', "cpu")
 
   storage = SharedStorage.remote()
   storage.set_info.remote({
@@ -409,7 +421,7 @@ if __name__ == '__main__':
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
-    enable_checkpointing=FLAGS.enable_checkpointing,
+    enable_checkpointing=args.enable_checkpointing
     verbose=True
   )
 
@@ -417,8 +429,8 @@ if __name__ == '__main__':
   ray.get(learner.get_variables.remote(""))
 
   # load the initial checkpoint if relevant
-  if FLAGS.initial_checkpoint:
-    ray.get(learner.load_checkpoint.remote(FLAGS.initial_checkpoint_path))
+  if args.initial_checkpoint:
+    ray.get(learner.load_checkpoint.remote(args.initial_checkpoint_path))
 
   actors = [ActorRay.remote(
     "localhost:8000", 
@@ -426,13 +438,13 @@ if __name__ == '__main__':
     storage,
     verbose=True,
     id=i
-  ) for i in range(FLAGS.num_actors)] # 50
+  ) for i in range(args.num_actors)] # 50
 
   [a.run.remote() for a in actors]
 
   # actor.run.remote()
   # learner.run.remote(total_learning_steps=200)
-  learner.run.remote(total_learning_steps=FLAGS.total_learning_steps)
+  learner.run.remote(total_learning_steps=args.total_learning_steps)
 
 
   while not ray.get(storage.get_info.remote("terminate")):
