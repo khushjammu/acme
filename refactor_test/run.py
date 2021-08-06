@@ -59,7 +59,7 @@ from variable_utils import RayVariableClient
 from environment_loop import CustomEnvironmentLoop
 from config import DQNConfig
 
-# jax.config.update('jax_platform_name', "cpu")
+jax.config.update('jax_platform_name', "cpu")
 
 config = DQNConfig(
   learning_rate=1e-3,
@@ -267,7 +267,7 @@ class ActorRay():
     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
     # todo: get it to print some info here?
 
-@ray.remote(resources={"tpu": 1}) # max_concurrency=1 + N(cacher nodes)
+@ray.remote() # max_concurrency=1 + N(cacher nodes)
 class LearnerRay():
   def __init__(self, reverb_address, shared_storage, verbose=False):
     self._verbose = verbose
