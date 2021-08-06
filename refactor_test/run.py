@@ -322,8 +322,8 @@ class LearnerRay():
     weights_to_save = self._learner.get_variables("")
     # print("gon save:", weights_to_save)
 
-    path = "/home/aryavohra/temp/acme/refactor_test/checkpoint"
-    # path = "checkpoint"
+    # path = "/home/aryavohra/temp/acme/refactor_test/checkpoint"
+    path = "checkpoint"
 
     # todo: checkpoint_directory
     with open(path, 'wb') as f:
