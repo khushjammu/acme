@@ -403,7 +403,12 @@ if __name__ == '__main__':
   ray.get(learner.get_variables.remote(""))
 
   # ray.get(learner.save_checkpoint.remote())
+  old_params = ray.get(learner.get_variables.remote(""))
   ray.get(learner.load_checkpoint.remote("/home/aryavohra/acme/refactor_test/checkpoint"))
+  new_params = ray.get(learner.get_variables.remote(""))
+
+  assert old_params != new_params, "no checkpoint update took place"
+
 
   # actors = [ActorRay.remote(
   #   "localhost:8000", 
