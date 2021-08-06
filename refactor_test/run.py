@@ -321,7 +321,7 @@ class LearnerRay():
     weights_to_save = self._learner.get_variables("")
 
     # todo: checkpoint_directory
-    jnp.save("checkpoint", weights_to_save) 
+    jnp.save("/home/aryavohra/temp/acme/refactor_test/checkpoint", weights_to_save) 
 
     if self._verbose: print("Learner: checkpoint saved successfully.")
     return True # todo: can we remove this?
