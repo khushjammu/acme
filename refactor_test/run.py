@@ -62,7 +62,7 @@ from environment_loop import CustomEnvironmentLoop
 from config import DQNConfig
 
 # jax.config.update('jax_platform_name', "cpu")
-flags.DEFINE_integer('total_learning_steps', 2e8, 'Number of training steps to run.')
+flags.DEFINE_float('total_learning_steps', 2e8, 'Number of training steps to run.')
 flags.DEFINE_integer('num_actors', 5, 'Number of actors to run.')
 flags.DEFINE_bool('force_cpu', False, 'Force all workers to use CPU.')
 
