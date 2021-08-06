@@ -40,17 +40,17 @@ import jax
 
 def make_environment(evaluation: bool = False,
                      level: str = 'BreakoutNoFrameskip-v4') -> dm_env.Environment:
-  env = gym.make(level, full_action_space=True)
+  env = gym.make(level, full_action_space=True, obs_type="ram")
 
   max_episode_len = 108_000 if evaluation else 50_000
 
   return wrappers.wrap_all(env, [
-      wrappers.GymAtariAdapter,
+      wrappers.GymAtariRAMAdapter,
       functools.partial(
-          wrappers.AtariWrapper,
+          wrappers.AtariRAMWrapper,
           to_float=True,
           max_episode_len=max_episode_len,
-          zero_discount_on_life_loss=True,
+          # zero_discount_on_life_loss=True,
       ),
       wrappers.SinglePrecisionWrapper,
   ])
@@ -58,6 +58,8 @@ def make_environment(evaluation: bool = False,
 environment = make_environment()
 
 spec = specs.make_environment_spec(environment)
+
+print(spec)
 
 def network(x):
   model = hk.Sequential([
