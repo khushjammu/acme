@@ -409,7 +409,7 @@ if __name__ == '__main__':
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
-    enable_checkpointing=flags.enable_checkpointing
+    enable_checkpointing=flags.enable_checkpointing,
     verbose=True
   )
 
