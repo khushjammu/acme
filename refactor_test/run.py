@@ -299,7 +299,7 @@ class LearnerRay():
       # logger=self._logger
     )
 
-    print("L - flag 0.5")
+    print("L - flag 2")
     print("devices:", jax.devices())
     if self._verbose: print(f"Learner: instantiated on {jnp.ones(3).device_buffer.device()}.")
 
@@ -402,8 +402,8 @@ if __name__ == '__main__':
   # important to force the learner onto TPU
   ray.get(learner.get_variables.remote(""))
 
-  ray.get(learner.save_checkpoint.remote())
-  # ray.get(learner.load_checkpoint.remote("/home/aryavohra/temp/acme/refactor_test/checkpoint"))
+  # ray.get(learner.save_checkpoint.remote())
+  ray.get(learner.load_checkpoint.remote("/home/aryavohra/acme/refactor_test/checkpoint"))
 
   # actors = [ActorRay.remote(
   #   "localhost:8000", 
