@@ -54,6 +54,7 @@ import functools
 import gym
 from acme import wrappers
 import uuid
+import pickle
 
 from variable_utils import RayVariableClient
 from environment_loop import CustomEnvironmentLoop
@@ -319,10 +320,16 @@ class LearnerRay():
 
   def save_checkpoint(self):
     weights_to_save = self._learner.get_variables("")
-    print("gon save:", weights_to_save)
+    # print("gon save:", weights_to_save)
+
+    # path = "/home/aryavohra/temp/acme/refactor_test/checkpoint"
+    path = "checkpoint"
 
     # todo: checkpoint_directory
-    jnp.save("/home/aryavohra/temp/acme/refactor_test/checkpoint", weights_to_save) 
+    with open(path, 'wb') as f:
+      pickle.dump(weights_to_save, f)
+
+    # jnp.save(, weights_to_save) 
 
     if self._verbose: print("Learner: checkpoint saved successfully.")
     return True # todo: can we remove this?
