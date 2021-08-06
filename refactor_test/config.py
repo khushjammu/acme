@@ -32,3 +32,6 @@ class DQNConfig:
 
   # How many gradient updates to perform per learner step.
   num_sgd_steps_per_step: int = 1
+
+  # Interval (in steps) for learner checkpointing
+  checkpoint_interval: int = 10_000
