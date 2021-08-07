@@ -103,9 +103,11 @@ class SGDLearner(acme.Learner):
 
       grads = jax.lax.pmean(grads, axis_name='num_devices')
       loss = jax.lax.pmean(loss, axis_name='num_devices') # unnecessary for update, useful for logging
+      opt_state = jax.lax.pmean(opt_state, axis_name='num_devices')
 
       extra.metrics.update({'total_loss': loss})
 
+      # should i pmean the opt_state?
       updates, new_opt_state = optimizer.update(grads, opt_state)
       new_params = optax.apply_updates(params, updates)
       
