@@ -103,7 +103,6 @@ class SGDLearner(acme.Learner):
 
       grads = jax.lax.pmean(grads, axis_name='num_devices')
       loss = jax.lax.pmean(loss, axis_name='num_devices') # unnecessary for update, useful for logging
-      opt_state = jax.lax.pmean(opt_state, axis_name='num_devices') # is this opt_state
 
       extra.metrics.update({'total_loss': loss})
 
