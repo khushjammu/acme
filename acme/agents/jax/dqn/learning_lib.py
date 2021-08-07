@@ -180,7 +180,11 @@ class SGDLearner(acme.Learner):
 
     # update params periodically
     # theoretically works, but need to run it multiple steps and see if it updates
-    target_params = rlax.periodic_update(self._state.params, self._state.target_params, self._state.steps, self._target_update_period)
+    target_params = rlax.periodic_update(new_params, self._state.target_params, self._state.steps, self._target_update_period)
+
+    # print(f"target_params == ")
+    # if self._state.steps % self._target_update_period == 0:
+
 
     # reshape back to pre-pmap dimensions (otherwise not the right shape for insertion to reverb)
     reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (a.shape[0]*a.shape[1])), extra.reverb_update)
