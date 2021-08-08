@@ -35,3 +35,6 @@ class DQNConfig:
 
   # Interval (in steps) for learner checkpointing
   checkpoint_interval: int = 10_000
+
+  # Logging configuration
+  base_log_dir: str = "logs/"

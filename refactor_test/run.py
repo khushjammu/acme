@@ -61,6 +61,8 @@ from variable_utils import RayVariableClient
 from environment_loop import CustomEnvironmentLoop
 from config import DQNConfig
 
+import tensorflow as tf
+
 # jax.config.update('jax_platform_name', "cpu")
 parser = argparse.ArgumentParser(description='Run some stonks.')
 
@@ -71,6 +73,7 @@ parser.add_argument("--force_cpu", help="Force all workers to use CPU.", action=
 parser.add_argument("--enable_checkpointing", help="Learner will checkpoint at preconfigured intervals.", action="store_true")
 parser.add_argument("--initial_checkpoint", help="Learner will load from initial checkpoint before training.", action="store_true")
 parser.add_argument("--initial_checkpoint_path", type=str, default="initial_checkpoint", help="Initial checkpoint for learner. `initial_checkpoint` must be True.")
+parser.add_argument("--enable_tensorboard", help="Learner and actor will write key statistics to tensorboard.", action="store_true")
 
 
 # flags.DEFINE_integer('total_learning_steps', 2e8, 'Number of training steps to run.')
@@ -180,7 +183,7 @@ def make_learner(network, optimizer, data_iterator, reverb_client, random_key, l
     target_update_period=config.target_update_period,
     iterator=data_iterator,
     replay_client=reverb_client,
-    logger=logger
+    logger=logger,
   )
   return learner
 
@@ -206,19 +209,31 @@ class ActorLogger():
       if not self.disable_printing: print(s)
       self.counter += 1
 
+class LearnerTensorboardLogger():
+  def __init__(self, tensorboard_writer):
+    self._tensorboard_writer = tensorboard_writer
+
+  def write(self, result):
+    with self._tensorboard_writer.as_default():
+        tf.summary.scalar("total_loss", result["total_loss"], step=result["steps"])
+
 @ray.remote
 class SharedStorage():
     """
     Class which run in a dedicated thread to store the network weights and some information.
     """
-    def __init__(self, max_result_cache_size=100):
+    def __init__(self, max_result_cache_size=100, log_dir=None):
       self.max_result_cache_size = max_result_cache_size
       self.current_checkpoint = {
         "steps": 0,
         "results": [],
-        "highscore": 0
+        "highscore": 0,
+        "printed_warning": False # used to print a warning ONCE if self.writer is None and we try to add_result
       }
-      self.writer = tf.summary.create_file_writer("/home/aryavohra/tf_summaries/stonks_histogram")
+      if log_dir:
+        self.writer = tf.summary.create_file_writer(log_dir) # "/home/aryavohra/tf_summaries/stonks_histogram"
+       else:
+        self.writer = None
 
 
     def get_info(self, keys):
@@ -232,34 +247,39 @@ class SharedStorage():
 
     def add_result(self, result):
       self.current_checkpoint["results"].append(result)
+      
+      if self.writer:
+        if result["episode_return"] > self.current_checkpoint["highscore"]:
+          self.current_checkpoint["highscore"] = result["episode_return"]
+          with self.writer.as_default():
+            tf.summary.scalar(
+              "actors/highscore",
+              self.current_checkpoint["highscore"],
+              step=self.current_checkpoint["steps"]
+            )
 
-      if result["episode_return"] > self.current_checkpoint["highscore"]:
-        self.current_checkpoint["highscore"] = result["episode_return"]
-        with self.writer.as_default():
-          tf.summary.scalar(
-            "actors/highscore",
-            self.current_checkpoint["highscore"],
-            step=self.current_checkpoint["steps"]
-          )
+        if len(self.current_checkpoint["results"]) > self.max_result_cache_size:
+          return_cache = [r["episode_return"].item() for r in self.current_checkpoint["results"]]
+          with self.writer.as_default():
+            tf.summary.scalar(
+              f"actors/past_{self.max_result_cache_size}_avg_return",
+              sum(return_cache)/len(return_cache),
+              step=self.current_checkpoint["steps"]
+            )
 
-      if len(self.current_checkpoint["results"]) > self.max_result_cache_size:
-        return_cache = [r["episode_return"].item() for r in self.current_checkpoint["results"]]
-        with self.writer.as_default():
-          tf.summary.scalar(
-            f"actors/past_{self.max_result_cache_size}_avg_return",
-            sum(return_cache)/len(return_cache),
-            step=self.current_checkpoint["steps"]
-          )
+            tf.summary.histogram(
+              "actors/return_histogram",
+              return_cache,
+              step=self.current_checkpoint["steps"]
+            )
 
-          tf.summary.histogram(
-            "actors/return_histogram",
-            return_cache,
-            step=self.current_checkpoint["steps"]
-          )
-        
-        # clearing the result cache
-        self.current_checkpoint["results"] = []
-
+          # clearing the result cache
+          self.current_checkpoint["results"] = []
+      else:
+        if not self.current_checkpoint["printed_warning"]:
+          print("WARNING: shared storage `add_result` called but tensorboard not enabled. Silencing future warnings...")
+          self.current_checkpoint["printed_warning"] = True
+          
       self.current_checkpoint["steps"] += 1
 
     def set_info(self, keys, values=None):
@@ -276,7 +296,7 @@ class SharedStorage():
 class ActorRay():
   """Glorified wrapper for environment loop."""
   
-  def __init__(self, reverb_address, variable_source, shared_storage, id=None, verbose=False):
+  def __init__(self, reverb_address, variable_source, shared_storage, log_dir=None, id=None, verbose=False):
     self._verbose = verbose
     self._id = str(id) or uuid.uuid1()
 
@@ -321,6 +341,11 @@ class ActorRay():
       should_update=True
       )
 
+    if log_dir:
+      self._tensorboard_writer = tf.summary.create_file_writer(f"{log_dir}/actor-{self._id}")
+    else:
+      self._tensorboard_writer = None
+
     print("A - flag 3")
 
 
@@ -331,6 +356,15 @@ class ActorRay():
   def ready(self):
     return True
 
+  def log_to_tensorboard(self, result):
+    """Logs statistics to `self._tensorboard_logger`."""
+
+    with self._tensorboard_writer.as_default():
+      tf.summary.scalar("episode_return", result["episode_return"], step=result["episodes"])
+      tf.summary.scalar("episode_length", result["episode_length"], step=result["episodes"])
+      tf.summary.scalar("steps_per_second", result["steps_per_second"], step=result["episodes"])
+      tf.summary.scalar("total_steps", result["steps"], step=result["episodes"])
+    
   def run(self):
     if self._verbose: print(f"Actor {self._id}: beginning training.")
 
@@ -341,10 +375,13 @@ class ActorRay():
       result.update({
         "id": self._id
         })
+
+      if self._tensorboard_writer:
+        self.log_to_tensorboard(result)
+
       self._logger.write(result)
 
-      self._shared_storage.add_result.remote(result)
-
+      self._shared_storage.add_result.remote(result) # we add to shared storage too for calculating return distribution etc.
       steps += result['episode_length']
 
     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
@@ -352,7 +389,7 @@ class ActorRay():
 
 @ray.remote # max_concurrency=1 + N(cacher nodes)
 class LearnerRay():
-  def __init__(self, reverb_address, shared_storage, enable_checkpointing=False, verbose=False):
+  def __init__(self, reverb_address, shared_storage, log_dir=None, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
     self._enable_checkpointing = enable_checkpointing
     self._shared_storage = shared_storage
@@ -373,13 +410,26 @@ class LearnerRay():
     # disabled the logger because it's not toooo useful
     # self._logger = ActorLogger()
     random_key = jax.random.PRNGKey(1701)
+
+
+    if log_dir:
+      self._tensorboard_writer = tf.summary.create_file_writer(f"{log_dir}/learner")
+      self._tensorboard_logger = LearnerTensorboardLogger(self._tensorboard_writer)
+    else:
+      self._tensorboard_writer = None
+      self._tensorboard_logger = None
+
+    # tensorboard_logging_func = log_to_tensorboard if log_dir else 
+
+    # learner {'steps': 17, 'total_loss': DeviceArray(0.01486394, dtype=float32)}
+
     self._learner = make_learner(
       network_factory(), 
       make_optimizer(), 
       data_iterator, 
       self._client,
       random_key,
-      # logger=self._logger
+      logger=self._tensorboard_logger
     )
 
     print("L - flag 2")
@@ -464,8 +514,10 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   if args.force_cpu: jax.config.update('jax_platform_name', "cpu")
+    
+  LOG_DIR = config.base_log_dir + str(datetime.datetime.now()) + "/" if args.enable_tensorboard else None
 
-  storage = SharedStorage.remote()
+  storage = SharedStorage.remote(log_dir=LOG_DIR)
   storage.set_info.remote({
     "terminate": False
   })
@@ -483,6 +535,7 @@ if __name__ == '__main__':
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
+    log_dir=LOG_DIR, 
     enable_checkpointing=args.enable_checkpointing,
     verbose=True
   )
@@ -498,6 +551,7 @@ if __name__ == '__main__':
     "localhost:8000", 
     learner, 
     storage,
+    log_dir=LOG_DIR,
     verbose=True,
     id=i
   ) for i in range(args.num_actors)] # 50
