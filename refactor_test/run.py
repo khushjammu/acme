@@ -284,6 +284,8 @@ class ActorRay():
 
     if log_dir:
       self._tensorboard_logger = tf.summary.create_file_writer(f"{log_dir}/{self._id}")
+    else:
+      self._tensorboard_logger = None
 
     print("A - flag 3")
 
