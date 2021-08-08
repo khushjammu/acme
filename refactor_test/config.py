@@ -39,4 +39,4 @@ class DQNConfig:
   # Logging configuration
   base_log_dir: str = "logs/" # Base log directory for all experimental runs.
   # Interval for logging global high-score and global return distribution
-  universal_stats_interval: int = 1000 
+  universal_stats_interval: int = 100
