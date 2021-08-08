@@ -215,7 +215,8 @@ class SharedStorage():
       self.max_result_cache_size = max_result_cache_size
       self.current_checkpoint = {
         "steps": 0,
-        "results": []
+        "results": [],
+        "highscore": 0
       }
       self.writer = tf.summary.create_file_writer("/home/aryavohra/tf_summaries/stonks_histogram")
 
@@ -232,6 +233,29 @@ class SharedStorage():
     def add_result(self, result):
       self.current_checkpoint["results"].append(result)
 
+      if result["episode_return"] > self.current_checkpoint["highscore"]:
+        self.current_checkpoint["highscore"] = result["episode_return"]
+        with self.writer.as_default():
+          tf.summary.scalar(
+            "actors/highscore",
+            self.current_checkpoint["highscore"],
+            step=self.current_checkpoint["steps"]
+          )
+
+      if len(self.current_checkpoint["results"]) > self.max_result_cache_size:
+        return_cache = self.current_checkpoint["results"]
+        with self.writer.as_default():
+          tf.summary.histogram(
+            "actors/return_histogram",
+            return_cache,
+            step=self.current_checkpoint["steps"]
+          )
+        
+        # clearing the result cache
+        self.current_checkpoint["results"] = []
+
+      self.current_checkpoint["steps"] += 1
+
     def set_info(self, keys, values=None):
       if isinstance(keys, str) and values is not None:
         self.current_checkpoint[keys] = values
@@ -239,14 +263,6 @@ class SharedStorage():
         self.current_checkpoint.update(keys)
       else:
         raise TypeError
-
-      if len(self.current_checkpoint["results"]) > self.max_result_cache_size:
-        return_cache = self.current_checkpoint["results"]
-        with self.writer.as_default():
-          tf.summary.histogram("episode/return_histogram", return_cache, step=self.current_checkpoint["steps"])
-        self.current_checkpoint["results"] = []
-
-      self.current_checkpoint["steps"] += 1
 
 
 
