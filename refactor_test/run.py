@@ -211,7 +211,7 @@ class SharedStorage():
     """
     Class which run in a dedicated thread to store the network weights and some information.
     """
-    def __init__(self, max_result_cache_size=10000):
+    def __init__(self, max_result_cache_size=100):
       self.max_result_cache_size = max_result_cache_size
       self.current_checkpoint = {
         "steps": 0,
