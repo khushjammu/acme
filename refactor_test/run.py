@@ -34,7 +34,7 @@ from acme.adders import reverb as adders
 from typing import Generic, List, Optional, Sequence, TypeVar
 from acme import types
 
-
+import tensorflow as tf
 import ray
 import jax
 import jax.numpy as jnp
@@ -66,9 +66,9 @@ import tensorflow as tf
 # jax.config.update('jax_platform_name', "cpu")
 parser = argparse.ArgumentParser(description='Run some stonks.')
 
-
-parser.add_argument('--total_learning_steps', type=float, default=2e8 ,help='Number of training steps to run.')
-parser.add_argument('--num_actors', type=int, default=5,help='Number of actors to run.')
+parser.add_argument('--total_learning_steps', type=float, default=2e8, help='Number of training steps to run.')
+parser.add_argument('--num_actors', type=int, default=5, help='Number of actors to run.')
+parser.add_argument('--max_result_cache_size', type=int, default=1000, help='Max size of SharedStorage result cache.')
 parser.add_argument("--force_cpu", help="Force all workers to use CPU.", action="store_true")
 parser.add_argument("--enable_checkpointing", help="Learner will checkpoint at preconfigured intervals.", action="store_true")
 parser.add_argument("--initial_checkpoint", help="Learner will load from initial checkpoint before training.", action="store_true")
@@ -133,7 +133,7 @@ def network_factory():
         networks_lib.AtariTorso(),
         hk.Flatten(),
         hk.nets.MLP([50, 50, spec.actions.num_values])
-        # hk.nets.MLP([256, 512, 1024, spec.actions.num_values])
+        # hk.nets.MLP([512, 1024, 2048, spec.actions.num_values])
     ])
     return model(x)
 
@@ -222,26 +222,75 @@ class SharedStorage():
     """
     Class which run in a dedicated thread to store the network weights and some information.
     """
-    def __init__(self):
-      self.current_checkpoint = {}
+    def __init__(self, max_result_cache_size=100, log_dir=None):
+      self.max_result_cache_size = max_result_cache_size
+      self.current_checkpoint = {
+        "steps": 0,
+        "results": [],
+        "highscore": 0,
+        "printed_warning": False # used to print a warning ONCE if self.writer is None and we try to add_result
+      }
+      if log_dir:
+        self.writer = tf.summary.create_file_writer(log_dir) # "/home/aryavohra/tf_summaries/stonks_histogram"
+       else:
+        self.writer = None
 
 
     def get_info(self, keys):
-        if isinstance(keys, str):
-            return self.current_checkpoint[keys]
-        elif isinstance(keys, list):
-            return {key: self.current_checkpoint[key] for key in keys}
-        else:
-            raise TypeError
+      if isinstance(keys, str):
+        return self.current_checkpoint[keys]
+      elif isinstance(keys, list):
+        return {key: self.current_checkpoint[key] for key in keys}
+      else:
+        raise TypeError
 
+
+    def add_result(self, result):
+      self.current_checkpoint["results"].append(result)
+      
+      if self.writer:
+        if result["episode_return"] > self.current_checkpoint["highscore"]:
+          self.current_checkpoint["highscore"] = result["episode_return"]
+          with self.writer.as_default():
+            tf.summary.scalar(
+              "actors/highscore",
+              self.current_checkpoint["highscore"],
+              step=self.current_checkpoint["steps"]
+            )
+
+        if len(self.current_checkpoint["results"]) > self.max_result_cache_size:
+          return_cache = [r["episode_return"].item() for r in self.current_checkpoint["results"]]
+          with self.writer.as_default():
+            tf.summary.scalar(
+              f"actors/past_{self.max_result_cache_size}_avg_return",
+              sum(return_cache)/len(return_cache),
+              step=self.current_checkpoint["steps"]
+            )
+
+            tf.summary.histogram(
+              "actors/return_histogram",
+              return_cache,
+              step=self.current_checkpoint["steps"]
+            )
+
+          # clearing the result cache
+          self.current_checkpoint["results"] = []
+      else:
+        if not self.current_checkpoint["printed_warning"]:
+          print("WARNING: shared storage `add_result` called but tensorboard not enabled. Silencing future warnings...")
+          self.current_checkpoint["printed_warning"] = True
+          
+      self.current_checkpoint["steps"] += 1
 
     def set_info(self, keys, values=None):
-        if isinstance(keys, str) and values is not None:
-            self.current_checkpoint[keys] = values
-        elif isinstance(keys, dict):
-            self.current_checkpoint.update(keys)
-        else:
-            raise TypeError
+      if isinstance(keys, str) and values is not None:
+        self.current_checkpoint[keys] = values
+      elif isinstance(keys, dict):
+        self.current_checkpoint.update(keys)
+      else:
+        raise TypeError
+
+
 
 @ray.remote(num_cpus=1)
 class ActorRay():
@@ -332,6 +381,7 @@ class ActorRay():
 
       self._logger.write(result)
 
+      self._shared_storage.add_result.remote(result) # we add to shared storage too for calculating return distribution etc.
       steps += result['episode_length']
 
     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
@@ -464,8 +514,10 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   if args.force_cpu: jax.config.update('jax_platform_name', "cpu")
+    
+  LOG_DIR = config.base_log_dir + str(datetime.datetime.now()) + "/" if args.enable_tensorboard else None
 
-  storage = SharedStorage.remote()
+  storage = SharedStorage.remote(log_dir=LOG_DIR)
   storage.set_info.remote({
     "terminate": False
   })
@@ -479,8 +531,6 @@ if __name__ == '__main__':
       priority_exponent=config.priority_exponent,
       discount=config.discount,
   )
-
-  LOG_DIR = config.base_log_dir + str(datetime.datetime.now()) + "/" if args.enable_tensorboard else None
 
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
