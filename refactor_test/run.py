@@ -382,8 +382,6 @@ class LearnerRay():
       logger=self._tensorboard_logger
     )
 
-    
-
     print("L - flag 2")
     print("devices:", jax.devices())
     if self._verbose: print(f"Learner: instantiated on {jnp.ones(3).device_buffer.device()}.")
@@ -487,7 +485,7 @@ if __name__ == '__main__':
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
-    log_dir=LOG_DIR,
+    log_dir=LOG_DIR, 
     enable_checkpointing=args.enable_checkpointing,
     verbose=True
   )

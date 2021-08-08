@@ -200,7 +200,6 @@ class SGDLearner(acme.Learner):
     # Update our counts and record it.
     result = self._counter.increment(steps=1)
     result.update(extra.metrics)
-    print("learner", result)
     self._logger.write(result)
 
     # update internal state representation
