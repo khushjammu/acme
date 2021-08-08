@@ -34,7 +34,7 @@ from acme.adders import reverb as adders
 from typing import Generic, List, Optional, Sequence, TypeVar
 from acme import types
 
-
+import tensorflow as tf
 import ray
 import jax
 import jax.numpy as jnp
@@ -64,8 +64,9 @@ from config import DQNConfig
 # jax.config.update('jax_platform_name', "cpu")
 parser = argparse.ArgumentParser(description='Run some stonks.')
 
-parser.add_argument('--total_learning_steps', type=float, default=2e8 ,help='Number of training steps to run.')
-parser.add_argument('--num_actors', type=int, default=5,help='Number of actors to run.')
+parser.add_argument('--total_learning_steps', type=float, default=2e8, help='Number of training steps to run.')
+parser.add_argument('--num_actors', type=int, default=5, help='Number of actors to run.')
+parser.add_argument('--max_result_cache_size', type=int, default=1000, help='Max size of SharedStorage result cache.')
 parser.add_argument("--force_cpu", help="Force all workers to use CPU.", action="store_true")
 parser.add_argument("--enable_checkpointing", help="Learner will checkpoint at preconfigured intervals.", action="store_true")
 parser.add_argument("--initial_checkpoint", help="Learner will load from initial checkpoint before training.", action="store_true")
@@ -129,7 +130,7 @@ def network_factory():
         networks_lib.AtariTorso(),
         hk.Flatten(),
         hk.nets.MLP([50, 50, spec.actions.num_values])
-        # hk.nets.MLP([256, 512, 1024, spec.actions.num_values])
+        # hk.nets.MLP([512, 1024, 2048, spec.actions.num_values])
     ])
     return model(x)
 
@@ -210,26 +211,41 @@ class SharedStorage():
     """
     Class which run in a dedicated thread to store the network weights and some information.
     """
-    def __init__(self):
-      self.current_checkpoint = {}
+    def __init__(self, max_result_cache_size=10000):
+      self.max_result_cache_size = max_result_cache_size
+      self.current_checkpoint = {"steps": 0}
+      self.writer = tf.summary.create_file_write("/home/aryavohra/tf_summaries/stonks_histogram")
 
 
     def get_info(self, keys):
-        if isinstance(keys, str):
-            return self.current_checkpoint[keys]
-        elif isinstance(keys, list):
-            return {key: self.current_checkpoint[key] for key in keys}
-        else:
-            raise TypeError
+      if isinstance(keys, str):
+        return self.current_checkpoint[keys]
+      elif isinstance(keys, list):
+        return {key: self.current_checkpoint[key] for key in keys}
+      else:
+        raise TypeError
 
+
+    def add_result(self, result):
+      self.current_checkpoint["results"].append(result)
 
     def set_info(self, keys, values=None):
-        if isinstance(keys, str) and values is not None:
-            self.current_checkpoint[keys] = values
-        elif isinstance(keys, dict):
-            self.current_checkpoint.update(keys)
-        else:
-            raise TypeError
+      if isinstance(keys, str) and values is not None:
+        self.current_checkpoint[keys] = values
+      elif isinstance(keys, dict):
+        self.current_checkpoint.update(keys)
+      else:
+        raise TypeError
+
+      if len(self.current_checkpoint["results"]) > self.max_result_cache_size:
+        return_cache = self.current_checkpoint["results"]
+        with self.writer.as_default():
+          tf.summary.histogram("episode/return_histogram", return_cache, step=self.current_checkpoint["steps"])
+        self.current_checkpoint["results"] = []
+
+      self.current_checkpoint["steps"] += 1
+
+
 
 @ray.remote(num_cpus=1)
 class ActorRay():
@@ -301,6 +317,9 @@ class ActorRay():
         "id": self._id
         })
       self._logger.write(result)
+
+      self.shared_storage.add_result.remote(result)
+
       steps += result['episode_length']
 
     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
