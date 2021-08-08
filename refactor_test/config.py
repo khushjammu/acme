@@ -33,8 +33,10 @@ class DQNConfig:
   # How many gradient updates to perform per learner step.
   num_sgd_steps_per_step: int = 1
 
+  # Checkpointing configuration
   # Interval (in steps) for learner checkpointing
   checkpoint_interval: int = 10_000
+  base_checkpoint_dir: str = "checkpoints/"
 
   # Logging configuration
   base_log_dir: str = "logs/" # Base log directory for all experimental runs.
