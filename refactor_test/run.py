@@ -360,7 +360,7 @@ if __name__ == '__main__':
   if args.initial_checkpoint:
     ray.get(learner.load_checkpoint.remote(args.initial_checkpoint_path))
 
-  ray.get(learner.save_checkpoint.remote(args.initial_checkpoint_path)
+  ray.get(learner.save_checkpoint.remote(args.initial_checkpoint_path))
 
   actors = [ActorRay.remote(
     "localhost:8000", 
