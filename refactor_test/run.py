@@ -64,12 +64,14 @@ from config import DQNConfig
 # jax.config.update('jax_platform_name', "cpu")
 parser = argparse.ArgumentParser(description='Run some stonks.')
 
+
 parser.add_argument('--total_learning_steps', type=float, default=2e8 ,help='Number of training steps to run.')
 parser.add_argument('--num_actors', type=int, default=5,help='Number of actors to run.')
 parser.add_argument("--force_cpu", help="Force all workers to use CPU.", action="store_true")
 parser.add_argument("--enable_checkpointing", help="Learner will checkpoint at preconfigured intervals.", action="store_true")
 parser.add_argument("--initial_checkpoint", help="Learner will load from initial checkpoint before training.", action="store_true")
 parser.add_argument("--initial_checkpoint_path", type=str, default="initial_checkpoint", help="Initial checkpoint for learner. `initial_checkpoint` must be True.")
+parser.add_argument("--enable_tensorboard", help="Learner and actor will write key statistics to tensorboard.", action="store_true")
 
 
 # flags.DEFINE_integer('total_learning_steps', 2e8, 'Number of training steps to run.')
@@ -235,7 +237,7 @@ class SharedStorage():
 class ActorRay():
   """Glorified wrapper for environment loop."""
   
-  def __init__(self, reverb_address, variable_source, shared_storage, id=None, verbose=False):
+  def __init__(self, reverb_address, variable_source, shared_storage, log_dir=None, id=None, verbose=False):
     self._verbose = verbose
     self._id = str(id) or uuid.uuid1()
 
@@ -280,6 +282,9 @@ class ActorRay():
       should_update=True
       )
 
+    if log_dir:
+      self._tensorboard_logger = tf.summary.create_file_writer(f"{log_dir}/{self._id}")
+
     print("A - flag 3")
 
 
@@ -289,6 +294,16 @@ class ActorRay():
   
   def ready(self):
     return True
+
+  def log_to_tensorboard(self, result):
+    """Logs statistics to `self._tensorboard_logger`."""
+
+    with self._tensorboard_logger.as_default():
+      tf.summary.scalar(f"actor/{result["id"]}/episode_return", result["episode_return"], step=result["episodes"])
+      tf.summary.scalar(f"actor/{result["id"]}/episode_length", result["episode_length"], step=result["episodes"])
+      tf.summary.scalar(f"actor/{result["id"]}/steps_per_second", result["steps_per_second"], step=result["episodes"])
+      tf.summary.scalar(f"actor/{result["id"]}/total_steps", result["steps"], step=result["episodes"])
+    
 
   def run(self):
     if self._verbose: print(f"Actor {self._id}: beginning training.")
@@ -300,7 +315,12 @@ class ActorRay():
       result.update({
         "id": self._id
         })
+
+      if self._tensorboard_logger:
+        self.log_to_tensorboard(result)
+
       self._logger.write(result)
+
       steps += result['episode_length']
 
     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
@@ -436,6 +456,8 @@ if __name__ == '__main__':
       discount=config.discount,
   )
 
+  LOG_DIR = config.base_log_dir + str(datetime.datetime.now()) + "/" if args.enable_tensorboard else None
+
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
@@ -454,6 +476,7 @@ if __name__ == '__main__':
     "localhost:8000", 
     learner, 
     storage,
+    log_dir=LOG_DIR,
     verbose=True,
     id=i
   ) for i in range(args.num_actors)] # 50
@@ -462,7 +485,7 @@ if __name__ == '__main__':
 
   # actor.run.remote()
   # learner.run.remote(total_learning_steps=200)
-  learner.run.remote(total_learning_steps=args.total_learning_steps)
+  # learner.run.remote(total_learning_steps=args.total_learning_steps)
 
 
   while not ray.get(storage.get_info.remote("terminate")):
