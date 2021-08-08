@@ -1,3 +1,4 @@
+from acme import types
 from acme import datasets
 from acme.utils import counting
 from acme.jax import networks as networks_lib
