@@ -245,6 +245,12 @@ class SharedStorage():
       if len(self.current_checkpoint["results"]) > self.max_result_cache_size:
         return_cache = [r["episode_return"].item() for r in self.current_checkpoint["results"]]
         with self.writer.as_default():
+          tf.summary.scalar(
+            f"actors/past_{self.max_result_cache_size}_avg_return",
+            sum(return_cache)/len(return_cache),
+            step=self.current_checkpoint["steps"]
+          )
+
           tf.summary.histogram(
             "actors/return_histogram",
             return_cache,
