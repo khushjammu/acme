@@ -183,7 +183,7 @@ def make_learner(network, optimizer, data_iterator, reverb_client, random_key, l
     target_update_period=config.target_update_period,
     iterator=data_iterator,
     replay_client=reverb_client,
-    logger=logger
+    logger=logger,
   )
   return learner
 
@@ -208,6 +208,14 @@ class ActorLogger():
     if self.counter % self.interval == 0:
       if not self.disable_printing: print(s)
       self.counter += 1
+
+class LearnerTensorboardLogger():
+  def __init__(self, tensorboard_writer):
+    self._tensorboard_writer = tensorboard_writer
+
+  def write(self, result):
+    with self._tensorboard_writer.as_default():
+        tf.summary.scalar("total_loss", result["total_loss"], step=result["steps"])
 
 @ray.remote
 class SharedStorage():
@@ -285,9 +293,9 @@ class ActorRay():
       )
 
     if log_dir:
-      self._tensorboard_logger = tf.summary.create_file_writer(f"{log_dir}/actor-{self._id}")
+      self._tensorboard_writer = tf.summary.create_file_writer(f"{log_dir}/actor-{self._id}")
     else:
-      self._tensorboard_logger = None
+      self._tensorboard_writer = None
 
     print("A - flag 3")
 
@@ -302,7 +310,7 @@ class ActorRay():
   def log_to_tensorboard(self, result):
     """Logs statistics to `self._tensorboard_logger`."""
 
-    with self._tensorboard_logger.as_default():
+    with self._tensorboard_writer.as_default():
       tf.summary.scalar("episode_return", result["episode_return"], step=result["episodes"])
       tf.summary.scalar("episode_length", result["episode_length"], step=result["episodes"])
       tf.summary.scalar("steps_per_second", result["steps_per_second"], step=result["episodes"])
@@ -319,7 +327,7 @@ class ActorRay():
         "id": self._id
         })
 
-      if self._tensorboard_logger:
+      if self._tensorboard_writer:
         self.log_to_tensorboard(result)
 
       self._logger.write(result)
@@ -352,19 +360,29 @@ class LearnerRay():
     # disabled the logger because it's not toooo useful
     # self._logger = ActorLogger()
     random_key = jax.random.PRNGKey(1701)
+
+
+    if log_dir:
+      self._tensorboard_writer = tf.summary.create_file_writer(f"{log_dir}/learner")
+      self._tensorboard_logger = LearnerTensorboardLogger(self._tensorboard_writer)
+    else:
+      self._tensorboard_writer = None
+      self._tensorboard_logger = None
+
+    # tensorboard_logging_func = log_to_tensorboard if log_dir else 
+
+    # learner {'steps': 17, 'total_loss': DeviceArray(0.01486394, dtype=float32)}
+
     self._learner = make_learner(
       network_factory(), 
       make_optimizer(), 
       data_iterator, 
       self._client,
       random_key,
-      # logger=self._logger
+      logger=self._tensorboard_logger
     )
 
-    if log_dir:
-      self._tensorboard_logger = tf.summary.create_file_writer(f"{log_dir}/learner")
-    else:
-      self._tensorboard_logger = None
+    
 
     print("L - flag 2")
     print("devices:", jax.devices())
