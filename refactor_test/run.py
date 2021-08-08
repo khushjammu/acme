@@ -269,13 +269,16 @@ class LearnerRay():
     """This has to be called by a wrapper which uses the .remote postfix."""
     return self._learner.get_variables(names)
 
-  def save_checkpoint(self, path):
+  def save_checkpoint(self, path: str):
     """Saves entire learner state to a checkpoint file."""
 
     state_to_save = self._learner.save()
 
-    # todo: checkpoint_directory
-    with open(path, 'wb') as f:
+    # create directory if doesn't exist
+    if not os.path.exists(config.base_checkpoint_dir):
+        os.makedirs(config.base_checkpoint_dir)
+
+    with open(config.base_checkpoint_dir + path, 'wb') as f:
       pickle.dump(state_to_save, f)
 
     if self._verbose: print("Learner: checkpoint saved successfully.")
@@ -360,7 +363,7 @@ if __name__ == '__main__':
   if args.initial_checkpoint:
     ray.get(learner.load_checkpoint.remote(args.initial_checkpoint_path))
 
-  # ray.get(learner.save_checkpoint.remote(args.initial_checkpoint_path))
+  ray.get(learner.save_checkpoint.remote("initial_checkpoint"))
 
   actors = [ActorRay.remote(
     "localhost:8000", 
