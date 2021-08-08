@@ -37,4 +37,6 @@ class DQNConfig:
   checkpoint_interval: int = 10_000
 
   # Logging configuration
-  base_log_dir: str = "logs/"
+  base_log_dir: str = "logs/" # Base log directory for all experimental runs.
+  # Interval for logging global high-score and global return distribution
+  universal_stats_interval: int = 1000 

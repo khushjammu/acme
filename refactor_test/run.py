@@ -235,7 +235,6 @@ class SharedStorage():
        else:
         self.writer = None
 
-
     def get_info(self, keys):
       if isinstance(keys, str):
         return self.current_checkpoint[keys]
@@ -243,7 +242,6 @@ class SharedStorage():
         return {key: self.current_checkpoint[key] for key in keys}
       else:
         raise TypeError
-
 
     def add_result(self, result):
       self.current_checkpoint["results"].append(result)
@@ -289,8 +287,6 @@ class SharedStorage():
         self.current_checkpoint.update(keys)
       else:
         raise TypeError
-
-
 
 @ray.remote(num_cpus=1)
 class ActorRay():
@@ -517,7 +513,10 @@ if __name__ == '__main__':
     
   LOG_DIR = config.base_log_dir + str(datetime.datetime.now()) + "/" if args.enable_tensorboard else None
 
-  storage = SharedStorage.remote(log_dir=LOG_DIR)
+  storage = SharedStorage.remote(
+    max_result_cache_size=config.universal_stats_interval,
+    log_dir=LOG_DIR)
+
   storage.set_info.remote({
     "terminate": False
   })
