@@ -270,26 +270,24 @@ class LearnerRay():
     return self._learner.get_variables(names)
 
   def save_checkpoint(self, path):
-    # TODO: extend checkpointing to include learner state
+    """Saves entire learner state to a checkpoint file."""
 
-    weights_to_save = self._learner.get_variables("")
+    state_to_save = self._learner.save()
 
     # todo: checkpoint_directory
     with open(path, 'wb') as f:
-      pickle.dump(weights_to_save, f)
+      pickle.dump(state_to_save, f)
 
     if self._verbose: print("Learner: checkpoint saved successfully.")
     return True # todo: can we remove this?
 
   def load_checkpoint(self, path):
     with open(path, 'rb') as f:
-      weights = pickle.load(f)
+      state = pickle.load(f)
 
-    self._learner.restore_from_single_weights(weights)
+    self._learner.restore(state)
 
     if self._verbose: print("Learner: checkpoint restored successfully.")
-
-    # once we've loaded the weights, wtf do we do with them
 
   def run(self, total_learning_steps: int = 2e8):
     if self._verbose: print("Learner: starting training.")
@@ -361,6 +359,8 @@ if __name__ == '__main__':
   # load the initial checkpoint if relevant
   if args.initial_checkpoint:
     ray.get(learner.load_checkpoint.remote(args.initial_checkpoint_path))
+
+  ray.get(learner.save_checkpoint.remote(args.initial_checkpoint_path)
 
   actors = [ActorRay.remote(
     "localhost:8000", 

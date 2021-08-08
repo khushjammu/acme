@@ -176,16 +176,6 @@ class SGDLearner(acme.Learner):
   def restore(self, state: TrainingState):
     self._state = state
 
-  def restore_from_single_weights(self, weights):
-    """Restores the params from a single-device version (aka output of get_variables)."""
-    self._state = TrainingState(
-        params=weights,
-        target_params=weights,
-        opt_state=s,
-        steps=self._state.steps,
-        rng_key=self._state.rng_key
-    )
-
 # class SGDLearner(acme.Learner):
 #   """An Acme learner based around SGD on batches.
 
