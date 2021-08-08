@@ -285,7 +285,7 @@ class ActorRay():
       )
 
     if log_dir:
-      self._tensorboard_logger = tf.summary.create_file_writer(f"{log_dir}/{self._id}")
+      self._tensorboard_logger = tf.summary.create_file_writer(f"{log_dir}/actor-{self._id}")
     else:
       self._tensorboard_logger = None
 
@@ -308,7 +308,6 @@ class ActorRay():
       tf.summary.scalar("steps_per_second", result["steps_per_second"], step=result["episodes"])
       tf.summary.scalar("total_steps", result["steps"], step=result["episodes"])
     
-
   def run(self):
     if self._verbose: print(f"Actor {self._id}: beginning training.")
 
@@ -332,7 +331,7 @@ class ActorRay():
 
 @ray.remote # max_concurrency=1 + N(cacher nodes)
 class LearnerRay():
-  def __init__(self, reverb_address, shared_storage, enable_checkpointing=False, verbose=False):
+  def __init__(self, reverb_address, shared_storage, log_dir=None, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
     self._enable_checkpointing = enable_checkpointing
     self._shared_storage = shared_storage
@@ -361,6 +360,11 @@ class LearnerRay():
       random_key,
       # logger=self._logger
     )
+
+    if log_dir:
+      self._tensorboard_logger = tf.summary.create_file_writer(f"{log_dir}/learner")
+    else:
+      self._tensorboard_logger = None
 
     print("L - flag 2")
     print("devices:", jax.devices())
@@ -489,7 +493,7 @@ if __name__ == '__main__':
 
   # actor.run.remote()
   # learner.run.remote(total_learning_steps=200)
-  # learner.run.remote(total_learning_steps=args.total_learning_steps)
+  learner.run.remote(total_learning_steps=args.total_learning_steps)
 
 
   while not ray.get(storage.get_info.remote("terminate")):
