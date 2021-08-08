@@ -39,9 +39,7 @@ parser.add_argument("--enable_tensorboard", help="Learner and actor will write k
 
 
 config = DQNConfig(
-  learning_rate=5e-4,
-  # learning_rate=625e-7,
-  # samples_per_insert=0.5
+  learning_rate=2e-4,
 )
 
 builder = Builder(config)
@@ -51,7 +49,7 @@ class SharedStorage():
     """
     Class which run in a dedicated thread to store the network weights and some information.
     """
-    def __init__(self, max_result_cache_size=100, log_dir=None):
+    def __init__(self, max_result_cache_size=1000, log_dir=None):
       self.max_result_cache_size = max_result_cache_size
       self.current_checkpoint = {
         "steps": 0,
