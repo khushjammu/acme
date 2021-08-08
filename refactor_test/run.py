@@ -1,69 +1,28 @@
-"""
-Actor
-- just run continuously, populating the self-play buffer until learner sends a terminate signal
-
-Learner
-- continuously sample from the replay buffer until has done sufficient learning steps
-- at regular intervals, perform an evaluation
-
-Cache # ?
-- fetch params from the learner every x seconds
-
-SharedStorage
-- store the terminate signal
-
-CustomConfig
-- holds all the config-related stuff (e.g. print intervals, learning rate)
-"""
-
-import time, datetime
-
-import acme
-from acme import specs
 from acme import datasets
-from acme.jax import utils
-from acme.jax import variable_utils
+from acme.utils import counting
 from acme.jax import networks as networks_lib
 from acme.agents import replay
-from acme.agents.jax import actors
-from acme.agents.jax.dqn import learning
-# from acme.agents.jax.dqn import config as dqn_config
-# from acme.testing import fakes
-
-from acme.adders import reverb as adders
 from typing import Generic, List, Optional, Sequence, TypeVar
-from acme import types
 
-import tensorflow as tf
 import ray
 import jax
 import jax.numpy as jnp
 import rlax
-import optax
 import reverb
-import numpy as np
-import haiku as hk
+import tensorflow as tf
 
-import operator
-import tree
-
-from acme.utils import counting
-from acme.utils import loggers
-
-import functools
-import gym
-from acme import wrappers
+import time
 import uuid
 import pickle
 import argparse
+import datetime
 
 from variable_utils import RayVariableClient
 from environment_loop import CustomEnvironmentLoop
 from config import DQNConfig
+from builder import Builder
+from loggers import ActorLogger, LearnerTensorboardLogger
 
-import tensorflow as tf
-
-# jax.config.update('jax_platform_name', "cpu")
 parser = argparse.ArgumentParser(description='Run some stonks.')
 
 parser.add_argument('--total_learning_steps', type=float, default=2e8, help='Number of training steps to run.')
@@ -76,146 +35,13 @@ parser.add_argument("--initial_checkpoint_path", type=str, default="initial_chec
 parser.add_argument("--enable_tensorboard", help="Learner and actor will write key statistics to tensorboard.", action="store_true")
 
 
-# flags.DEFINE_integer('total_learning_steps', 2e8, 'Number of training steps to run.')
-# flags.DEFINE_integer('num_actors', 5, 'Number of actors to run.')
-# flags.DEFINE_bool('force_cpu', False, 'Force all workers to use CPU.')
-
-# flags.DEFINE_bool('enable_checkpointing', False, 'Learner will checkpoint at preconfigured intervals.')
-# flags.DEFINE_bool('initial_checkpoint', False, 'Learner will load from initial checkpoint before training.')
-# flags.DEFINE_string('initial_checkpoint_path', "initial_checkpoint", 'Initial checkpoint for learner. `initial_checkpoint` must be True.')
-
-# FLAGS = flags.FLAGS
-
 config = DQNConfig(
   learning_rate=5e-4,
   # learning_rate=625e-7,
   # samples_per_insert=0.5
 )
 
-# def environment_factory(evaluation: bool = False, level: str = 'BreakoutNoFrameskip-v4'):
-#   """Creates environment."""
-#   env = gym.make(level, full_action_space=True, obs_type="ram")
-#   max_episode_len = 108_000 if evaluation else 50_000
-
-#   return wrappers.wrap_all(env, [
-#       wrappers.GymAtariRAMAdapter,
-#       functools.partial(
-#           wrappers.AtariRAMWrapper,
-#           to_float=True,
-#           max_episode_len=max_episode_len,
-#           # zero_discount_on_life_loss=True,
-#       ),
-#       wrappers.SinglePrecisionWrapper,
-#   ])
-
-def environment_factory(evaluation: bool = False, level: str = 'BreakoutNoFrameskip-v4'):
-  """Creates environment."""
-  env = gym.make(level, full_action_space=True)
-  max_episode_len = 108_000 if evaluation else 50_000
-
-  return wrappers.wrap_all(env, [
-      wrappers.GymAtariAdapter,
-      functools.partial(
-          wrappers.AtariWrapper,
-          to_float=True,
-          max_episode_len=max_episode_len,
-          zero_discount_on_life_loss=True,
-      ),
-      wrappers.SinglePrecisionWrapper,
-  ])
-
-spec = specs.make_environment_spec(environment_factory())
-
-def network_factory():
-  """Creates network."""
-  def network(x):
-    model = hk.Sequential([
-        networks_lib.AtariTorso(),
-        hk.Flatten(),
-        hk.nets.MLP([50, 50, spec.actions.num_values])
-        # hk.nets.MLP([512, 1024, 2048, spec.actions.num_values])
-    ])
-    return model(x)
-
-  # Make network purely functional
-  network_hk = hk.without_apply_rng(hk.transform(network, apply_rng=True))
-  dummy_obs = utils.add_batch_dim(utils.zeros_like(spec.observations))
-
-  network = networks_lib.FeedForwardNetwork(
-    init=lambda rng: network_hk.init(rng, dummy_obs),
-    apply=network_hk.apply)
-
-  return network
-
-def make_actor(policy_network, random_key, adder = None, variable_source = None, temp_client_key=None):
-  """Creates an actor."""
-  assert variable_source is not None, "make_actor doesn't support None for `variable_source` right now"
-
-  variable_client = RayVariableClient(
-      client=variable_source,
-      key='',
-      # variables={'policy': policy_network.variables},
-      update_period=100,
-      temp_client_key=temp_client_key
-  )
-
-  variable_client.update_and_wait()
-
-  actor = actors.FeedForwardActor(
-    policy=policy_network,
-    random_key=random_key,
-    variable_client=variable_client, # need to write a custom wrapper around learner so it calls .remote
-    adder=adder)
-  return actor
-
-def make_adder(reverb_client):
-  """Creates a reverb adder."""
-  return adders.NStepTransitionAdder(reverb_client, config.n_step, config.discount)
-
-def make_learner(network, optimizer, data_iterator, reverb_client, random_key, logger=None, checkpoint=None):
-  # TODO: add a sexy logger here
-  learner = learning.DQNLearner(
-    network=network,
-    random_key=random_key,
-    optimizer=optimizer,
-    discount=config.discount,
-    importance_sampling_exponent=config.importance_sampling_exponent,
-    target_update_period=config.target_update_period,
-    iterator=data_iterator,
-    replay_client=reverb_client,
-    logger=logger,
-  )
-  return learner
-
-def make_optimizer():
-  optimizer = optax.chain(
-    optax.clip_by_global_norm(config.max_gradient_norm),
-    optax.adam(config.learning_rate),
-  )
-  return optimizer
-
-
-class ActorLogger():
-  def __init__(self, interval=1, disable_printing=False):
-    self.data = []
-    self.counter = 0
-    self.interval = interval
-    self.disable_printing = disable_printing
-    if self.disable_printing: print("actor logger printing temporarily disabled")
-
-  def write(self, s):
-    self.data.append(s)
-    if self.counter % self.interval == 0:
-      if not self.disable_printing: print(s)
-      self.counter += 1
-
-class LearnerTensorboardLogger():
-  def __init__(self, tensorboard_writer):
-    self._tensorboard_writer = tensorboard_writer
-
-  def write(self, result):
-    with self._tensorboard_writer.as_default():
-        tf.summary.scalar("total_loss", result["total_loss"], step=result["steps"])
+builder = Builder(config)
 
 @ray.remote
 class SharedStorage():
@@ -302,7 +128,7 @@ class ActorRay():
 
     print("A - flag 0.5")
 
-    network = network_factory()
+    network = builder.network_factory()
     def policy(params: networks_lib.Params, key: jnp.ndarray,
                observation: jnp.ndarray) -> jnp.ndarray:
       action_values = network.apply(params, observation) # how will this work when they're on different devices?
@@ -313,21 +139,18 @@ class ActorRay():
     # todo: make this proper splitting and everything
     random_key=jax.random.PRNGKey(1701)
 
-    self._actor = make_actor(
+    self._actor = builder.make_actor(
       policy, 
       random_key,
-      adder=make_adder(self._client),
+      adder=builder.make_adder(self._client),
       variable_source=variable_source,
       temp_client_key=self._id
     )
 
     print("A - flag 2")
-    self._environment = environment_factory()
+    self._environment = builder.environment_factory()
     self._counter = counting.Counter() # prefix='actor'
-    self._logger = ActorLogger(
-      # interval=10, # log every 10 steps
-      # disable_printing=(type(id) == int and (id % 4 == 0)) # only get every 4th actor to print shit
-    ) # TODO: use config for `interval` arg
+    self._logger = ActorLogger() # TODO: use config for `interval` arg
 
     self._env_loop = CustomEnvironmentLoop(
       self._environment, 
@@ -345,8 +168,6 @@ class ActorRay():
     print("A - flag 3")
 
 
-    # TODO: migrate all print statements to the logger
-    # or should i? logger is for the environment loop
     if self._verbose: print(f"Actor {self._id}: instantiated on {jnp.ones(3).device_buffer.device()}.")
   
   def ready(self):
@@ -381,9 +202,8 @@ class ActorRay():
       steps += result['episode_length']
 
     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
-    # todo: get it to print some info here?
 
-@ray.remote # max_concurrency=1 + N(cacher nodes)
+@ray.remote
 class LearnerRay():
   def __init__(self, reverb_address, shared_storage, log_dir=None, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
@@ -419,9 +239,9 @@ class LearnerRay():
 
     # learner {'steps': 17, 'total_loss': DeviceArray(0.01486394, dtype=float32)}
 
-    self._learner = make_learner(
-      network_factory(), 
-      make_optimizer(), 
+    self._learner = builder.make_learner(
+      builder.network_factory(), 
+      builder.make_optimizer(), 
       data_iterator, 
       self._client,
       random_key,
@@ -448,10 +268,9 @@ class LearnerRay():
     return self._learner.get_variables(names)
 
   def save_checkpoint(self, path):
-    weights_to_save = self._learner.get_variables("")
+    # TODO: extend checkpointing to include learner state
 
-    # path = "/home/aryavohra/temp/acme/refactor_test/checkpoint"
-    # path = "checkpoint"
+    weights_to_save = self._learner.get_variables("")
 
     # todo: checkpoint_directory
     with open(path, 'wb') as f:
@@ -493,11 +312,6 @@ class LearnerRay():
 
         if self._enable_checkpointing and (steps_completed % config.checkpoint_interval == 0):
           self.save_checkpoint(f"checkpoint-{steps_completed}.pickle")
-
-        # todo: add evaluation
-        # perhaps make a coordinator which runs learner for x steps, then calls an eval actor?
-        # if steps_completed % config.eval_interval == 0:
-        #   pass
 
     if self._verbose: print(f"Learner complete at {steps_completed}. Terminating actors.")
     self._shared_storage.set_info.remote({
@@ -557,16 +371,7 @@ if __name__ == '__main__':
 
   [a.run.remote() for a in actors]
 
-  # actor.run.remote()
-  # learner.run.remote(total_learning_steps=200)
   learner.run.remote(total_learning_steps=args.total_learning_steps)
-
 
   while not ray.get(storage.get_info.remote("terminate")):
     time.sleep(1)
-
-
-
-
-
-
