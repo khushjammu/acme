@@ -99,13 +99,14 @@ class SGDLearner(acme.Learner):
       # Implements one SGD step of the loss and updates training state
 
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
-          params, params, batch, rng_key)
+          params, target_params, batch, rng_key)
 
       grads = jax.lax.pmean(grads, axis_name='num_devices')
       loss = jax.lax.pmean(loss, axis_name='num_devices') # unnecessary for update, useful for logging
 
       extra.metrics.update({'total_loss': loss})
 
+      # should i pmean the opt_state?
       updates, new_opt_state = optimizer.update(grads, opt_state)
       new_params = optax.apply_updates(params, updates)
       
@@ -180,7 +181,11 @@ class SGDLearner(acme.Learner):
 
     # update params periodically
     # theoretically works, but need to run it multiple steps and see if it updates
-    target_params = rlax.periodic_update(self._state.params, self._state.target_params, self._state.steps, self._target_update_period)
+    target_params = rlax.periodic_update(new_params, self._state.target_params, self._state.steps, self._target_update_period)
+
+    # print(f"target_params == ")
+    # if self._state.steps % self._target_update_period == 0:
+
 
     # reshape back to pre-pmap dimensions (otherwise not the right shape for insertion to reverb)
     reverb_update = jax.tree_map(lambda a: jnp.reshape(a, (a.shape[0]*a.shape[1])), extra.reverb_update)
