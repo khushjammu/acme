@@ -337,7 +337,7 @@ class ActorRay():
         })
       self._logger.write(result)
 
-      self.shared_storage.add_result.remote(result)
+      self._shared_storage.add_result.remote(result)
 
       steps += result['episode_length']
 
