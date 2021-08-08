@@ -213,8 +213,11 @@ class SharedStorage():
     """
     def __init__(self, max_result_cache_size=10000):
       self.max_result_cache_size = max_result_cache_size
-      self.current_checkpoint = {"steps": 0}
-      self.writer = tf.summary.create_file_write("/home/aryavohra/tf_summaries/stonks_histogram")
+      self.current_checkpoint = {
+        "steps": 0,
+        "results": []
+      }
+      self.writer = tf.summary.create_file_writer("/home/aryavohra/tf_summaries/stonks_histogram")
 
 
     def get_info(self, keys):
