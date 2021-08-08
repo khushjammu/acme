@@ -105,7 +105,7 @@ class Builder():
         client=variable_source,
         key='',
         # variables={'policy': policy_network.variables},
-        update_period=100,
+        update_period=1,
         temp_client_key=temp_client_key
     )
 
