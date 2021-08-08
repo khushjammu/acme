@@ -61,6 +61,8 @@ from variable_utils import RayVariableClient
 from environment_loop import CustomEnvironmentLoop
 from config import DQNConfig
 
+import tensorflow as tf
+
 # jax.config.update('jax_platform_name', "cpu")
 parser = argparse.ArgumentParser(description='Run some stonks.')
 
