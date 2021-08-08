@@ -303,10 +303,10 @@ class ActorRay():
     """Logs statistics to `self._tensorboard_logger`."""
 
     with self._tensorboard_logger.as_default():
-      tf.summary.scalar(f"actor/{result['id']}/episode_return", result["episode_return"], step=result["episodes"])
-      tf.summary.scalar(f"actor/{result['id']}/episode_length", result["episode_length"], step=result["episodes"])
-      tf.summary.scalar(f"actor/{result['id']}/steps_per_second", result["steps_per_second"], step=result["episodes"])
-      tf.summary.scalar(f"actor/{result['id']}/total_steps", result["steps"], step=result["episodes"])
+      tf.summary.scalar("episode_return", result["episode_return"], step=result["episodes"])
+      tf.summary.scalar("episode_length", result["episode_length"], step=result["episodes"])
+      tf.summary.scalar("steps_per_second", result["steps_per_second"], step=result["episodes"])
+      tf.summary.scalar("total_steps", result["steps"], step=result["episodes"])
     
 
   def run(self):
