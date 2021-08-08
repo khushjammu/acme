@@ -232,7 +232,7 @@ class SharedStorage():
       }
       if log_dir:
         self.writer = tf.summary.create_file_writer(log_dir) # "/home/aryavohra/tf_summaries/stonks_histogram"
-       else:
+      else:
         self.writer = None
 
     def get_info(self, keys):
