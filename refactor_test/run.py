@@ -1,3 +1,4 @@
+from acme import specs
 from acme import types
 from acme import datasets
 from acme.utils import counting
@@ -337,7 +338,7 @@ if __name__ == '__main__':
   })
 
   reverb_replay = replay.make_reverb_prioritized_nstep_replay(
-      environment_spec=spec,
+      environment_spec=specs.make_environment_spec(builder.environment_factory()),
       n_step=config.n_step,
       batch_size=config.batch_size,
       max_replay_size=config.max_replay_size,
