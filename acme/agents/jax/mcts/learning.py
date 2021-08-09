@@ -127,33 +127,6 @@ class MCTSLoss(LossFn):
 
 
     return loss, extra
-    # # Forward pass.
-    # q_tm1 = network.apply(params, transitions.observation)
-    # q_t_value = network.apply(target_params, transitions.next_observation)
-    # q_t_selector = network.apply(params, transitions.next_observation)
-
-    # # Cast and clip rewards.
-    # d_t = (transitions.discount * self.discount).astype(jnp.float32)
-    # r_t = jnp.clip(transitions.reward, -self.max_abs_reward,
-    #                self.max_abs_reward).astype(jnp.float32)
-
-    # # Compute double Q-learning n-step TD-error.
-    # batch_error = jax.vmap(rlax.double_q_learning)
-    # td_error = batch_error(q_tm1, transitions.action, r_t, d_t, q_t_value,
-    #                        q_t_selector)
-    # batch_loss = rlax.huber_loss(td_error, self.huber_loss_parameter)
-
-    # # Importance weighting.
-    # importance_weights = (1. / probs).astype(jnp.float32)
-    # importance_weights **= self.importance_sampling_exponent
-    # importance_weights /= jnp.max(importance_weights)
-
-    # # Reweight.
-    # loss = jnp.mean(importance_weights * batch_loss)  # []
-    # reverb_update = ReverbUpdate(
-    #     keys=keys, priorities=jnp.abs(td_error).astype(jnp.float64))
-    # extra = LossExtra(metrics={}, reverb_update=reverb_update)
-    # return loss, extra
 
 # TODO: migrate this to multicore (commented version below)
 class MCTSLearner(acme.Learner):
@@ -181,7 +154,7 @@ class MCTSLearner(acme.Learner):
     # SGD performs the loss, optimizer update and periodic target net update.
     def sgd_step(state: TrainingState,
                  batch: reverb.ReplaySample) -> Tuple[TrainingState, LossExtra]:
-      print("learner: sgd_step started")
+      # print("learner: sgd_step started")
       next_rng_key, rng_key = jax.random.split(state.rng_key)
       # Implements one SGD step of the loss and updates training state
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
@@ -238,9 +211,9 @@ class MCTSLearner(acme.Learner):
 
   def step(self):
     """Takes one SGD step on the learner."""
-    print("learner: stepping")
+    # print("learner: stepping")
     batch = next(self._data_iterator)
-    print("learner: fetched batch")
+    # print("learner: fetched batch")
     self._state, extra = self._sgd_step(self._state, batch)
 
     if self._replay_client:

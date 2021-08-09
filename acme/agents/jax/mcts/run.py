@@ -43,25 +43,25 @@ import config
 config = config.MCTSConfig()
 
 
-# environment = bsuite.load_from_id("catch/0")
-# environment = wrappers.SinglePrecisionWrapper(raw_environment)
-# spec = specs.make_environment_spec(environment)
+environment = bsuite.load_from_id("catch/0")
+environment = wrappers.SinglePrecisionWrapper(raw_environment)
+spec = specs.make_environment_spec(environment)
 
 # Create a fake environment to test with.
-environment = fakes.DiscreteEnvironment(
-    num_actions=5,
-    num_observations=10,
-    obs_shape=(10, 5),
-    obs_dtype=np.float32,
-    episode_length=10)
-spec = specs.make_environment_spec(environment)
+# environment = fakes.DiscreteEnvironment(
+#     num_actions=5,
+#     num_observations=10,
+#     obs_shape=(10, 5),
+#     obs_dtype=np.float32,
+#     episode_length=10)
+# spec = specs.make_environment_spec(environment)
 
 model = simulator.Simulator(environment)
 
 def network(x):
   model = hk.Sequential([
       hk.Flatten(), 
-      hk.nets.MLP([256, 1024, 2048]),
+      hk.nets.MLP([256, 1024]),
       networks_lib.PolicyValueHead(spec.actions.num_values)
   ])
   return model(x)
