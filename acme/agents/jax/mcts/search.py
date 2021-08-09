@@ -24,6 +24,7 @@ import dataclasses
 import numpy as np
 
 import time
+import jax
 
 
 @dataclasses.dataclass
