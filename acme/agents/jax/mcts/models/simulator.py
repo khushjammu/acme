@@ -23,6 +23,7 @@ from acme.agents.tf.mcts.models import base
 import dataclasses
 import dm_env
 
+from acme import wrappers
 import pickle
 
 @dataclasses.dataclass
@@ -64,11 +65,11 @@ class Simulator(base.Model):
   def save_checkpoint(self):
     self._checkpoint = Checkpoint(
         needs_reset=self._needs_reset,
-        environment=pickle.dumps(self._env),
+        environment=copy.deepcopy(self._env._environment),
     )
 
   def load_checkpoint(self):
-    self._env = pickle.loads(self._checkpoint.environment)
+    self._env = wrappers.SinglePrecisionWrapper(copy.deepcopy(self._checkpoint.environment))
     self._needs_reset = self._checkpoint.needs_reset
 
   def step(self, action: types.Action) -> dm_env.TimeStep:
