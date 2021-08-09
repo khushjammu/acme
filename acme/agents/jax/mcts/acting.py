@@ -60,6 +60,7 @@ class MCTSActor(core.Actor):
       variable_client: variable_utils.VariableClient,
       num_actions: int,
       num_simulations: int,
+      discount: int,
       model = None, # todo: sort out environment model
       adder: Optional[adders.Adder] = None,
       has_extras: bool = False,
@@ -78,6 +79,7 @@ class MCTSActor(core.Actor):
     """
     self._num_actions = num_actions
     self._num_simulations = num_simulations
+    self._discount = discount
     self._random_key = random_key
     self._has_extras = has_extras
     self._extras: types.NestedArray = ()
