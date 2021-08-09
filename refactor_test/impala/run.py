@@ -204,7 +204,7 @@ class ActorRay():
 
     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
 
-@ray.remote(resources={"tpu": 1})
+@ray.remote#(resources={"tpu": 1})
 class LearnerRay():
   def __init__(self, reverb_address, shared_storage, random_key, log_dir=None, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
@@ -340,7 +340,7 @@ if __name__ == '__main__':
 
   args = parser.parse_args()
 
-  if args.force_cpu: jax.config.update('jax_platform_name', "cpu")
+  #if args.force_cpu: jax.config.update('jax_platform_name', "cpu")
     
   LOG_DIR = config.base_log_dir + str(datetime.datetime.now()) + "/" if args.enable_tensorboard else None
 
