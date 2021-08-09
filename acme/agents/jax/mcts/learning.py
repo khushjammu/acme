@@ -19,6 +19,7 @@ from typing import Dict, Iterator, List, NamedTuple, Optional, Tuple
 
 import acme
 from acme.adders import reverb as adders
+from acme.agents import agent
 from acme.jax import networks as networks_lib
 from acme.jax import utils
 from acme.utils import async_utils
