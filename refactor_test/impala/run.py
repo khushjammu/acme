@@ -214,6 +214,8 @@ class LearnerRay():
 
     print("L - flag 0.5")
 
+    print("devices:", jax.devices())
+
     # disabled the logger because it's not toooo useful
     # self._logger = ActorLogger()
 
@@ -369,6 +371,8 @@ if __name__ == '__main__':
     sequence_period=builder.config.sequence_period,
     batch_size=builder.config.batch_size,
   )
+
+  print("devices:", jax.devices())
 
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
