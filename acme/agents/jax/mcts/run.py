@@ -104,6 +104,7 @@ actor = MCTSActor(
     random_key=key_actor,
     variable_client=VariableClient(learner, ''),
     num_actions=spec.actions.num_values,
+    num_simulations=10,
     model = model, # todo: sort out environment model
     # adder: Optional[adders.Adder] = None,
 )

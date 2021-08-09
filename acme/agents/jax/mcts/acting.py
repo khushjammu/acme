@@ -59,6 +59,7 @@ class MCTSActor(core.Actor):
       random_key: network_lib.PRNGKey,
       variable_client: variable_utils.VariableClient,
       num_actions: int,
+      num_simulations: int,
       model = None, # todo: sort out environment model
       adder: Optional[adders.Adder] = None,
       has_extras: bool = False,
@@ -76,6 +77,7 @@ class MCTSActor(core.Actor):
       backend: Which backend to use for running the policy.
     """
     self._num_actions = num_actions
+    self._num_simulations = num_simulations
     self._random_key = random_key
     self._has_extras = has_extras
     self._extras: types.NestedArray = ()
