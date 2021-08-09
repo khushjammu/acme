@@ -65,6 +65,21 @@ class Builder():
     self.config = config
     self.spec = specs.make_environment_spec(self.environment_factory())
 
+  def make_reverb(self, core_state, spec):
+    extra_spec = {
+      'core_state': core_state,
+      'logits': np.ones(shape=(spec.actions.num_values,), dtype=np.float32)
+    }
+
+    reverb_queue = replay.make_reverb_online_queue(
+      environment_spec=spec,
+      extra_spec=extra_spec,
+      max_queue_size=self.config.max_queue_size,
+      sequence_length=self.config.sequence_length,
+      sequence_period=self.config.sequence_period,
+      batch_size=self.config.batch_size,
+    )
+
   def environment_factory(self, evaluation: bool = False, level: str = 'BreakoutNoFrameskip-v4'):
     """Creates environment."""
     # todo: add configurable ram-states
@@ -84,7 +99,7 @@ class Builder():
         wrappers.SinglePrecisionWrapper,
     ])
 
-  def network_factory(self):
+  def network_factory(self, spec):
     """Creates networks."""
 
     def forward_fn(x, s):
@@ -177,6 +192,8 @@ class Builder():
       baseline_cost=self.config.baseline_cost,
       max_abs_reward=self.config.max_abs_reward,
     )
+
+    self.make_reverb(initial_state_init_fn(random_key), spec)
 
     return learner
 

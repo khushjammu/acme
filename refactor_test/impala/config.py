@@ -21,7 +21,6 @@ class IMPALAConfig:
 
   # Optimizer options
   learning_rate: float = 1e-4
-  n_step: int = 5  # N-step TD learning.
   adam_momentum_decay: float = 0.0
   adam_variance_decay: float = 0.99
 
