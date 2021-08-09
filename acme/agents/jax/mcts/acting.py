@@ -104,7 +104,8 @@ class MCTSActor(core.Actor):
         ), key
 
     # this policy is the state-value model
-    self._policy = jax.jit(batched_policy, backend=backend)
+    # self._policy = jax.jit(batched_policy, backend=backend)
+    self._policy = batched_policy
 
     def forward(observation):
       (logits, value), self._random_key = self._policy(
