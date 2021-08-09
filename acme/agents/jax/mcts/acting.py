@@ -56,6 +56,7 @@ class MCTSActor(core.Actor):
       policy,
       random_key: network_lib.PRNGKey,
       variable_client: variable_utils.VariableClient,
+      num_actions: int,
       model = None, # todo: sort out environment model
       adder: Optional[adders.Adder] = None,
       has_extras: bool = False,

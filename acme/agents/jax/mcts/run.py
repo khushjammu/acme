@@ -75,7 +75,7 @@ loss_fn = MCTSLoss()
 optimizer = optax.adam(5e-4)
 
 reverb_replay = replay.make_reverb_prioritized_nstep_replay(
-    environment_spec=specs.make_environment_spec(builder.environment_factory()),
+    environment_spec=spec,
     n_step=config.n_step,
     batch_size=config.batch_size,
     max_replay_size=config.max_replay_size,
@@ -103,6 +103,7 @@ actor = MCTSActor(
     policy=network,
     random_key=key_actor,
     variable_client=VariableClient(learner, ''),
+    num_actions=spec.actions.num_values,
     model = model, # todo: sort out environment model
     # adder: Optional[adders.Adder] = None,
 )
