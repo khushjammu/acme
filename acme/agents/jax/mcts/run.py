@@ -27,6 +27,11 @@ import haiku as hk
 import numpy as np
 import jax
 
+from acme.jax.variable_utils import VariableClient
+
+from learner import MCTSLoss, MCTSLearner
+from acting import MCTSActor
+
 import config
 
 config = config.MCTSConfig()
@@ -64,7 +69,7 @@ key_learner, key_actor = jax.random.split(jax.random.PRNGKey(config.seed))
 
 
 
-loss_fn = mcts.MCTSLoss()
+loss_fn = MCTSLoss()
 optimizer = optax.adam(5e-4)
 
 reverb_replay = replay.make_reverb_prioritized_nstep_replay(
@@ -77,7 +82,7 @@ reverb_replay = replay.make_reverb_prioritized_nstep_replay(
     discount=config.discount,
 )
 
-learner = mcts.MCTSLearner(
+learner = MCTSLearner(
   network=network,
   loss_fn=loss_fn,
   optimizer=optimizer,
@@ -92,7 +97,7 @@ learner = mcts.MCTSLearner(
 
 # Construct the agent.
 
-actor = mcts.MCTSActor(
+actor = MCTSActor(
     policy=network,
     random_key=key_actor,
     variable_client=VariableClient(learner, ''),
