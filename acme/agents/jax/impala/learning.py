@@ -65,7 +65,6 @@ class IMPALALearner(acme.Learner):
       prefetch_size: int = 2,
       num_prefetch_threads: Optional[int] = None,
   ):
-
     local_devices = jax.local_devices()
     process_id = jax.process_index()
     logging.info('Learner process id: %s. Devices passed: %s', process_id,
@@ -74,6 +73,7 @@ class IMPALALearner(acme.Learner):
                  process_id, local_devices)
     self._devices = devices or local_devices
     self._local_devices = [d for d in self._devices if d in local_devices]
+    print(self._local_devices)
 
     loss_fn = losses.impala_loss(
         unroll_fn,
