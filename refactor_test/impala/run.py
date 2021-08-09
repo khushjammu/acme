@@ -204,7 +204,7 @@ class ActorRay():
 
     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
 
-@ray.remote
+@ray.remote(resources={"tpu": 1})
 class LearnerRay():
   def __init__(self, reverb_address, shared_storage, random_key, log_dir=None, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
@@ -214,7 +214,6 @@ class LearnerRay():
 
     print("L - flag 0.5")
 
-    print("devices:", jax.devices())
 
     # disabled the logger because it's not toooo useful
     # self._logger = ActorLogger()
@@ -261,7 +260,6 @@ class LearnerRay():
 
     print("L - flag 3")
     
-    print("devices:", jax.devices())
     if self._verbose: print(f"Learner: instantiated on {jnp.ones(3).device_buffer.device()}.")
 
   @staticmethod
