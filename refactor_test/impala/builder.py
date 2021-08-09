@@ -26,10 +26,11 @@ from acme.agents.jax.impala import acting, learning
 from acme.adders import reverb as adders
 from typing import Generic, List, Optional, Sequence, TypeVar
 
-import jax.numpy as jnp
 import optax
 import haiku as hk
 import numpy as np
+import jax
+import jax.numpy as jnp
 
 from acme.utils import counting
 from acme.utils import loggers
