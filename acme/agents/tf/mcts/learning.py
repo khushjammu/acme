@@ -72,7 +72,7 @@ class AZLearner(acme.Learner):
       print("logits:", logits)
       print("value:", value)
       print("target_value:", target_value)
-      print("pi_t")
+      print("pi_t:", pi_t)
 
       # Value loss is simply on-policy TD learning.
       value_loss = tf.square(r_t + self._discount * d_t * target_value - value)
