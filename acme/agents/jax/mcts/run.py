@@ -28,6 +28,7 @@ import haiku as hk
 import numpy as np
 import optax
 import jax
+import jax.numpy as jnp
 
 from acme.jax.variable_utils import VariableClient
 
