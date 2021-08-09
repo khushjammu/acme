@@ -18,6 +18,7 @@
 from absl.testing import absltest
 import acme
 from acme import specs
+from acme import wrappers
 from acme.agents.jax import dqn
 from acme.agents.jax.mcts.models import simulator
 from acme.jax import networks as networks_lib
@@ -40,14 +41,18 @@ import config
 config = config.MCTSConfig()
 
 
-# Create a fake environment to test with.
-environment = fakes.DiscreteEnvironment(
-    num_actions=5,
-    num_observations=10,
-    obs_shape=(10, 5),
-    obs_dtype=np.float32,
-    episode_length=10)
+raw_environment = bsuite.load_from_id("catch/0")
+environment = wrappers.SinglePrecisionWrapper(raw_environment)
 spec = specs.make_environment_spec(environment)
+
+# Create a fake environment to test with.
+# environment = fakes.DiscreteEnvironment(
+#     num_actions=5,
+#     num_observations=10,
+#     obs_shape=(10, 5),
+#     obs_dtype=np.float32,
+#     episode_length=10)
+# spec = specs.make_environment_spec(environment)
 
 model = simulator.Simulator(environment)
 
@@ -119,12 +124,6 @@ actor = MCTSActor(
 #     batch_size=10,
 #     samples_per_insert=2,
 #     min_replay_size=10)
-
-class CustomLogger():
-  def write(self, s):
-    print(s)
-
-logger = CustomLogger()
 
 # Try running the environment loop. We have no assertions here because all
 # we care about is that the agent runs without raising any errors.
