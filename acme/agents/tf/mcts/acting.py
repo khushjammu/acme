@@ -31,6 +31,7 @@ from scipy import special
 import sonnet as snt
 import tensorflow as tf
 
+import time
 
 class MCTSActor(acme.Actor):
   """Executes a policy- and value-network guided MCTS search."""
@@ -81,6 +82,7 @@ class MCTSActor(acme.Actor):
     if self._model.needs_reset:
       self._model.reset(observation)
 
+    t = time.time()
     # Compute a fresh MCTS plan.
     root = search.mcts(
         observation,
@@ -91,6 +93,7 @@ class MCTSActor(acme.Actor):
         num_actions=self._num_actions,
         discount=self._discount,
     )
+    print(f"MCTS took {time.time()-t}")
 
     # The agent's policy is softmax w.r.t. the *visit counts* as in AlphaZero.
     probs = search.visit_count_policy(root)
