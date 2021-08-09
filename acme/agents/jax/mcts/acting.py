@@ -97,7 +97,7 @@ class MCTSActor(core.Actor):
       observation = utils.add_batch_dim(observation)
       # output = policy(params, key2, observation)
       logits, value = policy(params, observation)
-      print("logits device:", logits.device)
+      print(jax.numpy.ones(3).device_buffer.device())
       return utils.squeeze_batch_dim(logits), utils.squeeze_batch_dim(value)
 
     # this policy is the state-value model
