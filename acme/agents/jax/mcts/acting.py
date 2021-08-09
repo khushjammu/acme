@@ -159,6 +159,8 @@ class MCTSActor(core.Actor):
       self._adder.add_first(timestep)
 
   def observe(self, action: network_lib.Action, next_timestep: dm_env.TimeStep):
+    print("self._prev_timestep", self._prev_timestep)
+    print("next_timestep", next_timestep)
     self._model.update(self._prev_timestep, action, next_timestep)
     self._prev_timestep = next_timestep
 
