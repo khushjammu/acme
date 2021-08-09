@@ -120,6 +120,12 @@ actor = MCTSActor(
 #     samples_per_insert=2,
 #     min_replay_size=10)
 
+class CustomLogger():
+  def write(self, s):
+    print(s)
+
+logger = CustomLogger()
+
 # Try running the environment loop. We have no assertions here because all
 # we care about is that the agent runs without raising any errors.
 loop = acme.EnvironmentLoop(environment, actor)

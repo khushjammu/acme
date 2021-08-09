@@ -102,6 +102,8 @@ class EnvironmentLoop(core.Worker):
         self._actor.update() # wait=self._should_wait
 
       # Book-keeping.
+
+      print("action,timestep:", action, timestep)
       episode_steps += 1
 
       # Equivalent to: episode_return += timestep.reward
