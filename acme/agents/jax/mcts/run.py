@@ -143,7 +143,7 @@ class MCTS(agent.Agent):
         observations_per_step=1,
     )
 
-# myagent = MCTS(actor, learner)
+myagent = MCTS(actor, learner)
 
 
 # agent = dqn.DQN(
@@ -155,5 +155,5 @@ class MCTS(agent.Agent):
 
 # Try running the environment loop. We have no assertions here because all
 # we care about is that the agent runs without raising any errors.
-loop = acme.EnvironmentLoop(environment, actor)
+loop = acme.EnvironmentLoop(environment, myagent)
 loop.run(num_episodes=20)

@@ -116,6 +116,7 @@ class MCTSLoss(LossFn):
       labels=pi_t,
       logits=logits
       )
+    print("loss:", loss)
 
     reverb_update = ReverbUpdate(
         keys=keys, priorities=jnp.abs(td_error).astype(jnp.float64))
