@@ -40,7 +40,9 @@ from acting import MCTSActor
 
 import config
 
-config = config.MCTSConfig()
+config = config.MCTSConfig(
+  batch_size=16
+  )
 
 
 raw_environment = bsuite.load_from_id("catch/0")
@@ -63,7 +65,7 @@ model = simulator.Simulator(environment)
 def network(x):
   model = hk.Sequential([
       hk.Flatten(), 
-      hk.nets.MLP([256, 1024]),
+      hk.nets.MLP([50, 50]),
       networks_lib.PolicyValueHead(spec.actions.num_values)
   ])
   return model(x)
@@ -121,13 +123,14 @@ def policy(params: networks_lib.Params,key,
 
 # Construct the agent.
 
+
 actor = MCTSActor(
     policy=policy,
     random_key=key_actor,
     variable_client=VariableClient(learner, ''),
     num_actions=spec.actions.num_values,
-    num_simulations=10,
-    discount=1.,
+    num_simulations=50,
+    discount=0.99,
     model=model, # todo: sort out environment model
     adder=reverb_replay.adder
     # adder: Optional[adders.Adder] = None,
