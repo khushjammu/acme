@@ -54,7 +54,7 @@ def network(x):
   model = hk.Sequential([
       hk.Flatten(), 
       hk.nets.MLP([256, 1024, 2048]),
-      networks.PolicyValueHead(spec.actions.num_values)
+      networks_lib.PolicyValueHead(spec.actions.num_values)
   ])
   return model(x)
 
