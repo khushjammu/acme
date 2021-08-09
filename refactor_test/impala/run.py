@@ -212,6 +212,8 @@ class LearnerRay():
     self._shared_storage = shared_storage
     self._client = reverb.Client(reverb_address)
 
+    print("devices:", jax.devices())
+
     print("L - flag 0.5")
 
 
