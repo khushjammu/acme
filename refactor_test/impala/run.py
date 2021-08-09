@@ -374,7 +374,7 @@ if __name__ == '__main__':
 
   print("devices:", jax.devices())
 
-  learner = LearnerRay( #learner = LearnerRay.options(max_concurrency=2).remote
+  learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
     random_key,
