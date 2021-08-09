@@ -19,6 +19,7 @@ from absl.testing import absltest
 import acme
 from acme import specs
 from acme.agents.jax import dqn
+from acme.agents.jax.mcts.models import simulator
 from acme.jax import networks as networks_lib
 from acme.jax import utils
 from acme.testing import fakes
