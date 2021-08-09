@@ -35,7 +35,7 @@ class MCTSConfig:
   max_gradient_norm: float = np.inf  # For gradient clipping.
 
   # Replay options
-  batch_size: int = 256  # Number of transitions per batch.
+  batch_size: int = 10  # Number of transitions per batch.
   min_replay_size: int = 1_000  # Minimum replay size.
   max_replay_size: int = 1_000_000  # Maximum replay size.
   replay_table_name: str = adders_reverb.DEFAULT_PRIORITY_TABLE
