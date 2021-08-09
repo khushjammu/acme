@@ -73,7 +73,7 @@ class Builder():
       'logits': np.ones(shape=(self.spec.actions.num_values,), dtype=np.float32)
     }
 
-    replay.make_reverb_online_queue(
+    r_queue = replay.make_reverb_online_queue(
       environment_spec=self.spec,
       extra_spec=extra_spec,
       max_queue_size=self.config.max_queue_size,

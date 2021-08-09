@@ -6,7 +6,6 @@ from acme.jax import networks as networks_lib
 from acme.agents import replay
 from typing import Generic, List, Optional, Sequence, TypeVar
 
-import numpy as np
 import ray
 import jax
 import jax.numpy as jnp
@@ -206,7 +205,7 @@ class ActorRay():
 
 @ray.remote
 class LearnerRay():
-  def __init__(self, reverb_address, shared_storage, random_key=jax.random.PRNGKey(1701), log_dir=None, enable_checkpointing=False, verbose=False):
+  def __init__(self, reverb_address, shared_storage, log_dir=None, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
     self._enable_checkpointing = enable_checkpointing
     self._shared_storage = shared_storage
@@ -215,7 +214,7 @@ class LearnerRay():
     print("L - flag 0.5")
 
     # todo: sort out the key
-    # random_key = jax.random.PRNGKey(1701)
+    random_key = jax.random.PRNGKey(1701)
 
     # disabled the logger because it's not toooo useful
     # self._logger = ActorLogger()
@@ -237,25 +236,11 @@ class LearnerRay():
 
     optimizer = builder.make_optimizer()
 
-    # # builder.make_reverb(
-    # #   initial_state_fn_transformed.apply(
-    # #     initial_state_fn_transformed.init(random_key)
-    # #   )
-    # # )
-
-    # extra_spec = {
-    #   'core_state': initial_state_fn_transformed.apply(initial_state_fn_transformed.init(random_key)),
-    #   'logits': np.ones(shape=(builder.spec.actions.num_values,), dtype=np.float32)
-    # }
-
-    # replay.make_reverb_online_queue(
-    #   environment_spec=builder.spec,
-    #   extra_spec=extra_spec,
-    #   max_queue_size=builder.config.max_queue_size,
-    #   sequence_length=builder.config.sequence_length,
-    #   sequence_period=builder.config.sequence_period,
-    #   batch_size=builder.config.batch_size,
-    # )
+    builder.make_reverb(
+      initial_state_fn_transformed.apply(
+        initial_state_fn_transformed.init(random_key)
+      )
+    )
 
     print("L - flag 1")
 
@@ -372,41 +357,9 @@ if __name__ == '__main__':
     "terminate": False
   })
 
-  forward_fn_transformed, \
-  unroll_fn_transformed, \
-  initial_state_fn_transformed = builder.network_factory()
-
-  random_key = jax.random.PRNGKey(1701)
-
-  extra_spec = {
-    'core_state': initial_state_fn_transformed.apply(initial_state_fn_transformed.init(random_key)),
-    'logits': np.ones(shape=(builder.spec.actions.num_values,), dtype=np.float32)
-  }
-
-  replay_dick = replay.make_reverb_online_queue(
-    environment_spec=builder.spec,
-    extra_spec=extra_spec,
-    max_queue_size=builder.config.max_queue_size,
-    sequence_length=builder.config.sequence_length,
-    sequence_period=builder.config.sequence_period,
-    batch_size=builder.config.batch_size,
-  )
-
-  # reverb_replay = replay.make_reverb_prioritized_nstep_replay(
-  #     environment_spec=specs.make_environment_spec(builder.environment_factory()),
-  #     n_step=config.n_step,
-  #     batch_size=config.batch_size,
-  #     max_replay_size=config.max_replay_size,
-  #     min_replay_size=config.min_replay_size,
-  #     priority_exponent=config.priority_exponent,
-  #     discount=config.discount,
-  # )
-
-
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
-    random_key=random_key,
     log_dir=LOG_DIR, 
     enable_checkpointing=args.enable_checkpointing,
     verbose=True
