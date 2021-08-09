@@ -153,20 +153,20 @@ def bfs(node: Node) -> types.Action:
   visit_counts = np.array([c.visit_count for c in node.children.values()])
   return argmax(-visit_counts)
 
-
+@jax.jit
 def puct(node: Node, ucb_scaling: float = 1.) -> types.Action:
   """PUCT search policy, i.e. UCT with 'prior' policy."""
   # Action values Q(s,a).
-  value_scores = np.array([child.value for child in node.children.values()])
+  value_scores = jnp.array([child.value for child in node.children.values()])
   check_numerics(value_scores)
 
   # Policy prior P(s,a).
-  priors = np.array([child.prior for child in node.children.values()])
+  priors = jnp.array([child.prior for child in node.children.values()])
   check_numerics(priors)
 
   # Visit ratios.
-  visit_ratios = np.array([
-      np.sqrt(node.visit_count) / (child.visit_count + 1)
+  visit_ratios = jnp.array([
+      jnp.sqrt(node.visit_count) / (child.visit_count + 1)
       for child in node.children.values()
   ])
   check_numerics(visit_ratios)
