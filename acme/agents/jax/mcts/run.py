@@ -43,10 +43,10 @@ import config
 config = config.MCTSConfig()
 
 
-environment = bsuite.load_from_id("catch/0")
-# environment = wrappers.SinglePrecisionWrapper(raw_environment)
-wrapped_environment = wrappers.SinglePrecisionWrapper(environment)
-spec = specs.make_environment_spec(wrapped_environment)
+raw_environment = bsuite.load_from_id("catch/0")
+environment = wrappers.SinglePrecisionWrapper(raw_environment)
+# wrapped_environment = wrappers.SinglePrecisionWrapper(environment)
+spec = specs.make_environment_spec(environment)
 print(spec)
 
 # Create a fake environment to test with.
