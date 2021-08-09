@@ -78,6 +78,7 @@ class MCTSActor(core.Actor):
       backend: Which backend to use for running the policy.
     """
     self._num_actions = num_actions
+    self._actions = list(range(self._num_actions))
     self._num_simulations = num_simulations
     self._discount = discount
     self._random_key = random_key
