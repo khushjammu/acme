@@ -139,9 +139,9 @@ class ActorRay():
     random_key=jax.random.PRNGKey(1701)
 
     self._actor = builder.make_actor(
-      forward_fn_transformed,
-      unroll_fn_transformed,
-      initial_state_fn_transformed,
+      forward_fn_transformed.apply,
+      initial_state_fn_transformed.init,
+      initial_state_fn_transformed.apply,
       random_key,
       adder=builder.make_adder(self._client),
       variable_source=variable_source,
