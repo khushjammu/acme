@@ -25,6 +25,7 @@ from acme.jax import utils
 from acme.testing import fakes
 import haiku as hk
 import numpy as np
+import optax
 import jax
 
 from acme.jax.variable_utils import VariableClient
