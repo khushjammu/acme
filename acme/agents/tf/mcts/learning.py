@@ -51,7 +51,7 @@ class AZLearner(acme.Learner):
     self._variables = network.trainable_variables
     self._discount = np.float32(discount)
 
-  # @tf.function
+  @tf.function
   def _step(self) -> tf.Tensor:
     """Do a step of SGD on the loss."""
 
@@ -67,12 +67,10 @@ class AZLearner(acme.Learner):
 
       # Value loss is simply on-policy TD learning.
       value_loss = tf.square(r_t + self._discount * d_t * target_value - value)
-      print("value_loss:", value_loss)
 
       # Policy loss distills MCTS policy into the policy network.
       policy_loss = tf.nn.softmax_cross_entropy_with_logits(
           logits=logits, labels=pi_t)
-      print("policy_loss:", policy_loss)
 
       # Compute gradients.
       loss = tf.reduce_mean(value_loss + policy_loss)
