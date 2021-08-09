@@ -56,7 +56,7 @@ class AZLearner(acme.Learner):
     """Do a step of SGD on the loss."""
 
     inputs = next(self._iterator)
-    print("inputs:", inputs)
+    # print("inputs:", inputs)
     o_t, _, r_t, d_t, o_tp1, extras = inputs.data
     pi_t = extras['pi']
 
