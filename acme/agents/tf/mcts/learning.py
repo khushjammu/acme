@@ -51,7 +51,7 @@ class AZLearner(acme.Learner):
     self._variables = network.trainable_variables
     self._discount = np.float32(discount)
 
-  @tf.function
+  # @tf.function
   def _step(self) -> tf.Tensor:
     """Do a step of SGD on the loss."""
 
