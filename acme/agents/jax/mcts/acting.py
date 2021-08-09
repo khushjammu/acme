@@ -102,7 +102,7 @@ class MCTSActor(core.Actor):
 
     # this policy is the state-value model
     # self._policy = jax.jit(batched_policy, backend=backend)
-    self._policy = jax.jit(batched_policy)
+    self._policy = batched_policy
 
     def forward(observation):
       logits, value = self._policy(self._client.params, observation)
