@@ -85,7 +85,7 @@ optimizer = optax.adam(5e-4)
 extra_spec = {
     'pi':
         specs.Array(
-            shape=(environment_spec.actions.num_values,), dtype=np.float32)
+            shape=(spec.actions.num_values,), dtype=np.float32)
 }
 
 reverb_replay = replay.make_reverb_prioritized_nstep_replay(
