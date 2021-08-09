@@ -118,7 +118,8 @@ class Builder():
   def make_actor(
       self,
       forward_fn,
-      initial_state_init_fn, initial_state_fn,
+      initial_state_init_fn,
+      initial_state_fn,
       random_key,
       adder=None,
       variable_source=None,
