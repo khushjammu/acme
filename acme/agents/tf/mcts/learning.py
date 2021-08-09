@@ -66,6 +66,14 @@ class AZLearner(acme.Learner):
       _, target_value = self._network(o_tp1)
       target_value = tf.stop_gradient(target_value)
 
+
+      print("r_t:", r_t)
+      print("scaled_discount:", self._discount * d_t)
+      print("logits:", logits)
+      print("value:", value)
+      print("target_value:", target_value)
+      print("pi_t")
+
       # Value loss is simply on-policy TD learning.
       value_loss = tf.square(r_t + self._discount * d_t * target_value - value)
 
