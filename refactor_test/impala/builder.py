@@ -26,6 +26,7 @@ from acme.agents.jax.impala import learning
 from acme.adders import reverb as adders
 from typing import Generic, List, Optional, Sequence, TypeVar
 
+import jax.numpy as jnp
 import optax
 import haiku as hk
 import numpy as np
