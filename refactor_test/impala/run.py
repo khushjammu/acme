@@ -236,10 +236,24 @@ class LearnerRay():
 
     optimizer = builder.make_optimizer()
 
-    builder.make_reverb(
-      initial_state_fn_transformed.apply(
-        initial_state_fn_transformed.init(random_key)
-      )
+    # builder.make_reverb(
+    #   initial_state_fn_transformed.apply(
+    #     initial_state_fn_transformed.init(random_key)
+    #   )
+    # )
+
+    extra_spec = {
+      'core_state': core_state,
+      'logits': np.ones(shape=(self.spec.actions.num_values,), dtype=np.float32)
+    }
+
+    replay.make_reverb_online_queue(
+      environment_spec=builder.spec,
+      extra_spec=extra_spec,
+      max_queue_size=builder.config.max_queue_size,
+      sequence_length=builder.config.sequence_length,
+      sequence_period=builder.config.sequence_period,
+      batch_size=builder.config.batch_size,
     )
 
     print("L - flag 1")
