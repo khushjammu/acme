@@ -99,11 +99,12 @@ def mcts(
 
     # Generate a trajectory.
     timestep = None
-    t = time.time()
+    
     while node.children:
       # Select an action according to the search policy.
+      t = time.time()
       action = search_policy(node)
-
+      print(f"time taken for PUCT: {time.time()-t}")
       # Point the node at the corresponding child.
       node = node.children[action]
 
@@ -112,7 +113,7 @@ def mcts(
       node.reward = timestep.reward or 0.
       node.terminal = timestep.last()
       trajectory.append(node)
-    print(f"time taken for initial trajectory generation: {time.time()-t}")
+
     if timestep is None:
       raise ValueError('Generated an empty rollout; this should not happen.')
 
