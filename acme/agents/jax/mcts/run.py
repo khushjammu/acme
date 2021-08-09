@@ -27,6 +27,10 @@ import haiku as hk
 import numpy as np
 import jax
 
+import MCTSConfig
+
+config = MCTSConfig()
+
 
 # Create a fake environment to test with.
 environment = fakes.DiscreteEnvironment(
