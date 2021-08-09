@@ -49,7 +49,7 @@ class IMPALARAMNetwork(hk.RNNCore):
         hk.nets.MLP([50, 50]),
     ])
     self._core = hk.LSTM(20)
-    self._head = networks.PolicyValueHead(num_actions)
+    self._head = networks_lib.PolicyValueHead(num_actions)
 
   def __call__(self, inputs, state):
     embeddings = self._torso(inputs)
