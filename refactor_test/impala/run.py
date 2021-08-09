@@ -335,7 +335,8 @@ class LearnerRay():
     })
 
 if __name__ == '__main__':
-  ray.init(address="auto")
+  ray.init()
+  # ray.init(address="auto")
 
   args = parser.parse_args()
 
