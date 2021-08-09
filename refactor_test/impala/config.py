@@ -29,6 +29,7 @@ class IMPALAConfig:
 
   # Replay options
   max_queue_size: Union[int, types.Batches] = types.Batches(10)
+  samples_per_insert: float = 32  # Ratio of learning samples to insert.
 
   def __post_init__(self):
     if isinstance(self.max_queue_size, types.Batches):
