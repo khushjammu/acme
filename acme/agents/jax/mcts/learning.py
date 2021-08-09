@@ -108,9 +108,9 @@ class MCTSLoss(LossFn):
     clipped_reward = jnp.clip(transitions.reward, -self.max_abs_reward,
                    self.max_abs_reward).astype(jnp.float32)
 
-    batch_loss = jax.vmap(self.stonks)
+    batch_loss_fn = jax.vmap(self.stonks)
 
-    loss = batch_loss(
+    batch_loss = batch_loss_fn(
       v_tm1=value,
       r_t=clipped_reward,
       discount_t=scaled_discount,
@@ -118,11 +118,13 @@ class MCTSLoss(LossFn):
       labels=transitions.extras["pi"],
       logits=logits
       )
-    print("loss:", loss)
 
+    loss = jnp.mean(batch_loss)
+    print("loss:", loss)
     reverb_update = ReverbUpdate(
-        keys=keys, priorities=jnp.abs(loss).astype(jnp.float64))
+        keys=keys, priorities=jnp.abs(batch_loss).astype(jnp.float64))
     extra = LossExtra(metrics={}, reverb_update=reverb_update)
+
 
     return loss, extra
     # # Forward pass.

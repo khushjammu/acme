@@ -68,13 +68,11 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     importance_weights **= self.importance_sampling_exponent
     importance_weights /= jnp.max(importance_weights)
 
-    print("loss batch size:", batch_loss, batch_loss.shape)
     # Reweight.
     loss = jnp.mean(importance_weights * batch_loss)  # []
     reverb_update = learning_lib.ReverbUpdate(
         keys=keys, priorities=jnp.abs(td_error).astype(jnp.float64))
     extra = learning_lib.LossExtra(metrics={}, reverb_update=reverb_update)
-    print("LOSS FINAL SHAPE:", loss, loss.shape)
     return loss, extra
 
 
