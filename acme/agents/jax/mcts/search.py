@@ -81,6 +81,7 @@ def mcts(
   # Evaluate the prior policy for this state.
   
   prior, value = evaluation(observation)
+  print("prior:", priot)
   assert prior.shape == (num_actions,)
 
   # Add exploration noise to the prior.
