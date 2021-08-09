@@ -383,7 +383,7 @@ if __name__ == '__main__':
     'logits': np.ones(shape=(builder.spec.actions.num_values,), dtype=np.float32)
   }
 
-  replay.make_reverb_online_queue(
+  replay_dick = replay.make_reverb_online_queue(
     environment_spec=builder.spec,
     extra_spec=extra_spec,
     max_queue_size=builder.config.max_queue_size,
@@ -391,6 +391,17 @@ if __name__ == '__main__':
     sequence_period=builder.config.sequence_period,
     batch_size=builder.config.batch_size,
   )
+
+  # reverb_replay = replay.make_reverb_prioritized_nstep_replay(
+  #     environment_spec=specs.make_environment_spec(builder.environment_factory()),
+  #     n_step=config.n_step,
+  #     batch_size=config.batch_size,
+  #     max_replay_size=config.max_replay_size,
+  #     min_replay_size=config.min_replay_size,
+  #     priority_exponent=config.priority_exponent,
+  #     discount=config.discount,
+  # )
+
 
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
