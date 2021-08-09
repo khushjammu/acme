@@ -236,7 +236,11 @@ class LearnerRay():
 
     optimizer = builder.make_optimizer()
 
-    builder.make_reverb(initial_state_fn_transformed.init(random_key))
+    builder.make_reverb(
+      initial_state_fn_transformed.apply(
+        initial_state_fn_transformed.init(random_key)
+      )
+    )
 
     print("L - flag 1")
 
