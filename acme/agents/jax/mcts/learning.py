@@ -176,6 +176,7 @@ class MCTSLearner(acme.Learner):
     # SGD performs the loss, optimizer update and periodic target net update.
     def sgd_step(state: TrainingState,
                  batch: reverb.ReplaySample) -> Tuple[TrainingState, LossExtra]:
+      print("learner: sgd_step started")
       next_rng_key, rng_key = jax.random.split(state.rng_key)
       # Implements one SGD step of the loss and updates training state
       (loss, extra), grads = jax.value_and_grad(self._loss, has_aux=True)(
@@ -231,7 +232,9 @@ class MCTSLearner(acme.Learner):
 
   def step(self):
     """Takes one SGD step on the learner."""
+    print("learner: stepping")
     batch = next(self._data_iterator)
+    print("learner: fetched batch")
     self._state, extra = self._sgd_step(self._state, batch)
 
     if self._replay_client:
