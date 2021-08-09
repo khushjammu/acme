@@ -19,10 +19,11 @@ from absl.testing import absltest
 import acme
 from acme import specs
 from acme import wrappers
+from acme.agents import agent
+from acme.agents import replay
 from acme.agents.jax import dqn
 from acme.agents.jax.mcts.models import simulator
 from acme.jax import networks as networks_lib
-from acme.agents import replay
 from acme.jax import utils
 from acme.testing import fakes
 import haiku as hk
@@ -84,7 +85,7 @@ optimizer = optax.adam(5e-4)
 reverb_replay = replay.make_reverb_prioritized_nstep_replay(
     environment_spec=spec,
     n_step=config.n_step,
-    batch_size=config.batch_size,
+    batch_size=2, #config.batch_size,
     max_replay_size=config.max_replay_size,
     min_replay_size=config.min_replay_size,
     priority_exponent=config.priority_exponent,
@@ -134,7 +135,7 @@ class MCTS(agent.Agent):
         observations_per_step=1,
     )
 
-agent = MCTS(actor, learner)
+myagent = MCTS(actor, learner)
 
 
 # agent = dqn.DQN(
@@ -146,5 +147,5 @@ agent = MCTS(actor, learner)
 
 # Try running the environment loop. We have no assertions here because all
 # we care about is that the agent runs without raising any errors.
-loop = acme.EnvironmentLoop(environment, agent)
+loop = acme.EnvironmentLoop(environment, myagent)
 loop.run(num_episodes=20)
