@@ -73,6 +73,7 @@ class PrioritizedDoubleQLearning(learning_lib.LossFn):
     reverb_update = learning_lib.ReverbUpdate(
         keys=keys, priorities=jnp.abs(td_error).astype(jnp.float64))
     extra = learning_lib.LossExtra(metrics={}, reverb_update=reverb_update)
+    print("LOSS FINAL SHAPE:", loss, loss.shape)
     return loss, extra
 
 
