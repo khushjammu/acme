@@ -23,6 +23,7 @@ from acme.agents.tf.mcts.models import base
 import dataclasses
 import dm_env
 
+import pickle
 
 @dataclasses.dataclass
 class Checkpoint:
@@ -44,7 +45,10 @@ class Simulator(base.Model):
 
   def __init__(self, env: dm_env.Environment):
     # Make a 'checkpoint' copy env to save/load from when doing rollouts.
-    self._env = copy.deepcopy(env._environment)
+    # self._env = copy.deepcopy(env)
+    # self._checkpoint = pickle.dumps(obj)
+    # self._pickled_env = pickle.dumps(env)
+    self._env = env
     self._needs_reset = True
     self.save_checkpoint()
 
@@ -60,11 +64,11 @@ class Simulator(base.Model):
   def save_checkpoint(self):
     self._checkpoint = Checkpoint(
         needs_reset=self._needs_reset,
-        environment=copy.deepcopy(self._env),
+        environment=pickle.dumps(self._env),
     )
 
   def load_checkpoint(self):
-    self._env = copy.deepcopy(self._checkpoint.environment)
+    self._env = pickle.loads(self._checkpoint.environment)
     self._needs_reset = self._checkpoint.needs_reset
 
   def step(self, action: types.Action) -> dm_env.TimeStep:
