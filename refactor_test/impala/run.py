@@ -214,125 +214,125 @@ class LearnerRay():
 
     print("devices:", jax.devices())
 
-    print("L - flag 0.5")
+  #   print("L - flag 0.5")
 
 
-    # disabled the logger because it's not toooo useful
-    # self._logger = ActorLogger()
+  #   # disabled the logger because it's not toooo useful
+  #   # self._logger = ActorLogger()
 
-    if log_dir:
-      self._tensorboard_writer = tf.summary.create_file_writer(f"{log_dir}/learner")
-      self._tensorboard_logger = LearnerTensorboardLogger(self._tensorboard_writer)
-    else:
-      self._tensorboard_writer = None
-      self._tensorboard_logger = None
+  #   if log_dir:
+  #     self._tensorboard_writer = tf.summary.create_file_writer(f"{log_dir}/learner")
+  #     self._tensorboard_logger = LearnerTensorboardLogger(self._tensorboard_writer)
+  #   else:
+  #     self._tensorboard_writer = None
+  #     self._tensorboard_logger = None
 
-    # tensorboard_logging_func = log_to_tensorboard if log_dir else 
+  #   # tensorboard_logging_func = log_to_tensorboard if log_dir else 
 
-    # learner {'steps': 17, 'total_loss': DeviceArray(0.01486394, dtype=float32)}
+  #   # learner {'steps': 17, 'total_loss': DeviceArray(0.01486394, dtype=float32)}
 
-    forward_fn_transformed, \
-    unroll_fn_transformed, \
-    initial_state_fn_transformed = builder.network_factory()
+  #   forward_fn_transformed, \
+  #   unroll_fn_transformed, \
+  #   initial_state_fn_transformed = builder.network_factory()
 
-    optimizer = builder.make_optimizer()
+  #   optimizer = builder.make_optimizer()
 
-    print("L - flag 1")
+  #   print("L - flag 1")
 
-    data_iterator = datasets.make_reverb_dataset(
-      table="priority_table",
-      server_address=reverb_address,
-      batch_size=config.batch_size,
-      prefetch_size=4,
-    ).as_numpy_iterator()
+  #   data_iterator = datasets.make_reverb_dataset(
+  #     table="priority_table",
+  #     server_address=reverb_address,
+  #     batch_size=config.batch_size,
+  #     prefetch_size=4,
+  #   ).as_numpy_iterator()
 
-    print("L - flag 2")
+  #   print("L - flag 2")
 
-    self._learner = builder.make_learner(
-      unroll_fn_transformed.init,
-      unroll_fn_transformed.apply,
-      initial_state_fn_transformed.init,
-      initial_state_fn_transformed.apply,
-      optimizer, 
-      data_iterator, 
-      self._client,
-      random_key,
-      logger=self._tensorboard_logger
-    )
+  #   self._learner = builder.make_learner(
+  #     unroll_fn_transformed.init,
+  #     unroll_fn_transformed.apply,
+  #     initial_state_fn_transformed.init,
+  #     initial_state_fn_transformed.apply,
+  #     optimizer, 
+  #     data_iterator, 
+  #     self._client,
+  #     random_key,
+  #     logger=self._tensorboard_logger
+  #   )
 
-    print("L - flag 3")
+  #   print("L - flag 3")
     
-    if self._verbose: print(f"Learner: instantiated on {jnp.ones(3).device_buffer.device()}.")
+  #   if self._verbose: print(f"Learner: instantiated on {jnp.ones(3).device_buffer.device()}.")
 
-  @staticmethod
-  def _calculate_num_learner_steps(num_observations: int, min_observations: int, observations_per_step: float) -> int:
-    """Calculates the number of learner steps to do at step=num_observations."""
-    n = num_observations - min_observations
-    if observations_per_step > 1:
-      # One batch every 1/obs_per_step observations, otherwise zero.
-      return int(n % int(observations_per_step) == 0)
-    else:
-      # Always return 1/obs_per_step batches every observation.
-      return int(1 / observations_per_step)
+  # @staticmethod
+  # def _calculate_num_learner_steps(num_observations: int, min_observations: int, observations_per_step: float) -> int:
+  #   """Calculates the number of learner steps to do at step=num_observations."""
+  #   n = num_observations - min_observations
+  #   if observations_per_step > 1:
+  #     # One batch every 1/obs_per_step observations, otherwise zero.
+  #     return int(n % int(observations_per_step) == 0)
+  #   else:
+  #     # Always return 1/obs_per_step batches every observation.
+  #     return int(1 / observations_per_step)
 
-  def get_variables(self, names: Sequence[str]) -> List[types.NestedArray]:
-    """This has to be called by a wrapper which uses the .remote postfix."""
-    return self._learner.get_variables(names)
+  # def get_variables(self, names: Sequence[str]) -> List[types.NestedArray]:
+  #   """This has to be called by a wrapper which uses the .remote postfix."""
+  #   return self._learner.get_variables(names)
 
-  def save_checkpoint(self, path: str):
-    """Saves entire learner state to a checkpoint file."""
+  # def save_checkpoint(self, path: str):
+  #   """Saves entire learner state to a checkpoint file."""
 
-    state_to_save = self._learner.save()
+  #   state_to_save = self._learner.save()
 
-    # create directory if doesn't exist
-    if not os.path.exists(config.base_checkpoint_dir):
-        os.makedirs(config.base_checkpoint_dir)
+  #   # create directory if doesn't exist
+  #   if not os.path.exists(config.base_checkpoint_dir):
+  #       os.makedirs(config.base_checkpoint_dir)
 
-    with open(config.base_checkpoint_dir + path, 'wb') as f:
-      pickle.dump(state_to_save, f)
+  #   with open(config.base_checkpoint_dir + path, 'wb') as f:
+  #     pickle.dump(state_to_save, f)
 
-    if self._verbose: print("Learner: checkpoint saved successfully.")
-    return True # todo: can we remove this?
+  #   if self._verbose: print("Learner: checkpoint saved successfully.")
+  #   return True # todo: can we remove this?
 
-  def load_checkpoint(self, path):
-    with open(path, 'rb') as f:
-      state = pickle.load(f)
+  # def load_checkpoint(self, path):
+  #   with open(path, 'rb') as f:
+  #     state = pickle.load(f)
 
-    self._learner.restore(state)
-    self._shared_storage.set_info.remote({
-      "steps": state.steps
-    })
+  #   self._learner.restore(state)
+  #   self._shared_storage.set_info.remote({
+  #     "steps": state.steps
+  #   })
 
-    if self._verbose: print("Learner: checkpoint restored successfully.")
+  #   if self._verbose: print("Learner: checkpoint restored successfully.")
 
-  def run(self, total_learning_steps: int = 2e8):
-    if self._verbose: print("Learner: starting training.")
+  # def run(self, total_learning_steps: int = 2e8):
+  #   if self._verbose: print("Learner: starting training.")
 
-    while self._client.server_info()["priority_table"].current_size < max(config.batch_size, config.min_replay_size):
-      time.sleep(0.1)
+  #   while self._client.server_info()["priority_table"].current_size < max(config.batch_size, config.min_replay_size):
+  #     time.sleep(0.1)
 
-    observations_per_step = config.batch_size / config.samples_per_insert
-    steps_completed = 0
+  #   observations_per_step = config.batch_size / config.samples_per_insert
+  #   steps_completed = 0
 
-    # TODO: migrate to the learner internal counter instance
-    while steps_completed < total_learning_steps:
-      steps = self._calculate_num_learner_steps(
-        num_observations=self._client.server_info()["priority_table"].current_size,
-        min_observations=max(config.batch_size, config.min_replay_size),
-        observations_per_step=observations_per_step
-        )
+  #   # TODO: migrate to the learner internal counter instance
+  #   while steps_completed < total_learning_steps:
+  #     steps = self._calculate_num_learner_steps(
+  #       num_observations=self._client.server_info()["priority_table"].current_size,
+  #       min_observations=max(config.batch_size, config.min_replay_size),
+  #       observations_per_step=observations_per_step
+  #       )
 
-      for _ in range(steps):
-        self._learner.step()
-        steps_completed += 1
+  #     for _ in range(steps):
+  #       self._learner.step()
+  #       steps_completed += 1
 
-        if self._enable_checkpointing and (steps_completed % config.checkpoint_interval == 0):
-          self.save_checkpoint(f"checkpoint-{steps_completed}.pickle")
+  #       if self._enable_checkpointing and (steps_completed % config.checkpoint_interval == 0):
+  #         self.save_checkpoint(f"checkpoint-{steps_completed}.pickle")
 
-    if self._verbose: print(f"Learner complete at {steps_completed}. Terminating actors.")
-    self._shared_storage.set_info.remote({
-      "terminate": True
-    })
+  #   if self._verbose: print(f"Learner complete at {steps_completed}. Terminating actors.")
+  #   self._shared_storage.set_info.remote({
+  #     "terminate": True
+  #   })
 
 if __name__ == '__main__':
   ray.init()
@@ -384,12 +384,12 @@ if __name__ == '__main__':
     verbose=True
   )
 
-  # important to force the learner onto TPU
-  ray.get(learner.get_variables.remote(""))
+  # # important to force the learner onto TPU
+  # ray.get(learner.get_variables.remote(""))
 
-  # load the initial checkpoint if relevant
-  if args.initial_checkpoint:
-    ray.get(learner.load_checkpoint.remote(args.initial_checkpoint_path))
+  # # load the initial checkpoint if relevant
+  # if args.initial_checkpoint:
+  #   ray.get(learner.load_checkpoint.remote(args.initial_checkpoint_path))
 
   # actors = [ActorRay.remote(
   #   "localhost:8000", 
