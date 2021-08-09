@@ -42,18 +42,18 @@ import config
 config = config.MCTSConfig()
 
 
-environment = bsuite.load_from_id("catch/0")
+# environment = bsuite.load_from_id("catch/0")
 # environment = wrappers.SinglePrecisionWrapper(raw_environment)
-spec = specs.make_environment_spec(environment)
+# spec = specs.make_environment_spec(environment)
 
 # Create a fake environment to test with.
-# environment = fakes.DiscreteEnvironment(
-#     num_actions=5,
-#     num_observations=10,
-#     obs_shape=(10, 5),
-#     obs_dtype=np.float32,
-#     episode_length=10)
-# spec = specs.make_environment_spec(environment)
+environment = fakes.DiscreteEnvironment(
+    num_actions=5,
+    num_observations=10,
+    obs_shape=(10, 5),
+    obs_dtype=np.float32,
+    episode_length=10)
+spec = specs.make_environment_spec(environment)
 
 model = simulator.Simulator(environment)
 
@@ -119,6 +119,24 @@ actor = MCTSActor(
     # adder: Optional[adders.Adder] = None,
 )
 
+class MCTS(agent.Agent):
+  """A single-process MCTS agent."""
+
+  def __init__(self, actor, learner):
+    # Now create the agent components: actor & learner.
+    actor = actor
+    learner = learner
+    # The parent class combines these together into one 'agent'.
+    super().__init__(
+        actor=actor,
+        learner=learner,
+        min_observations=10,
+        observations_per_step=1,
+    )
+
+agent = MCTS(actor, learner)
+
+
 # agent = dqn.DQN(
 #     environment_spec=spec,
 #     network=network,
@@ -128,5 +146,5 @@ actor = MCTSActor(
 
 # Try running the environment loop. We have no assertions here because all
 # we care about is that the agent runs without raising any errors.
-loop = acme.EnvironmentLoop(environment, actor)
+loop = acme.EnvironmentLoop(environment, agent)
 loop.run(num_episodes=20)
