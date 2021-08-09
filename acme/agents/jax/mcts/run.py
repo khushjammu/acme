@@ -88,6 +88,8 @@ extra_spec = {
             shape=(spec.actions.num_values,), dtype=np.float32)
 }
 
+print("FUCK YOU KHUSH BATCH SIZE:", config.batch_size)
+
 reverb_replay = replay.make_reverb_prioritized_nstep_replay(
     environment_spec=spec,
     extra_spec=extra_spec,
