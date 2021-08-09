@@ -95,7 +95,8 @@ class MCTSLoss(LossFn):
     """Calculate a loss on a single batch of data."""
     del key
     transitions: types.Transition = batch.data
-    # print(batch.data)
+    print(transitions)
+    print(batch.data)
     print(batch.info) # need to figure out how to get the pi
     keys, probs, *_ = batch.info
 
