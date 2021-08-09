@@ -288,6 +288,9 @@ class LearnerRay():
       state = pickle.load(f)
 
     self._learner.restore(state)
+    self._shared_storage.set_info.remote({
+      "steps": state.steps
+    })
 
     if self._verbose: print("Learner: checkpoint restored successfully.")
 
