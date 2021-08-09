@@ -30,6 +30,7 @@ import numpy as np
 import optax
 import jax
 import jax.numpy as jnp
+import bsuite
 
 from acme.jax.variable_utils import VariableClient
 
