@@ -83,7 +83,7 @@ class MCTSLoss(LossFn):
       logits=logits
     )
 
-    return value_loss + policy_loss
+    return jnp.square(value_loss + policy_loss)
 
   def __call__(
       self,
