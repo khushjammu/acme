@@ -23,7 +23,7 @@ import datetime
 
 # from variable_utils import RayVariableClient
 # from environment_loop import CustomEnvironmentLoop
-# from config import IMPALAConfig
+from config import IMPALAConfig
 # from builder import Builder
 # from loggers import ActorLogger, LearnerTensorboardLogger
 
