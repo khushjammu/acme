@@ -245,7 +245,7 @@ class LearnerRay():
 
     extra_spec = {
       'core_state': initial_state_fn_transformed.apply(initial_state_fn_transformed.init(random_key)),
-      'logits': np.ones(shape=(self.spec.actions.num_values,), dtype=np.float32)
+      'logits': np.ones(shape=(builder.spec.actions.num_values,), dtype=np.float32)
     }
 
     replay.make_reverb_online_queue(
