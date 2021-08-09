@@ -28,6 +28,7 @@ from typing import Generic, List, Optional, Sequence, TypeVar
 
 import optax
 import haiku as hk
+import numpy as np
 
 from acme.utils import counting
 from acme.utils import loggers
