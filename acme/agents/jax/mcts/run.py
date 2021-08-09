@@ -117,6 +117,7 @@ actor = MCTSActor(
     num_simulations=10,
     discount=1.,
     model = model, # todo: sort out environment model
+    adder=reverb_replay.adder
     # adder: Optional[adders.Adder] = None,
 )
 
