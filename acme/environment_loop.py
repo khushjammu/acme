@@ -103,7 +103,7 @@ class EnvironmentLoop(core.Worker):
 
       # Book-keeping.
 
-      print("action,timestep:", action, timestep)
+      # print("action,timestep:", action, timestep)
       episode_steps += 1
 
       # Equivalent to: episode_return += timestep.reward
@@ -126,6 +126,7 @@ class EnvironmentLoop(core.Worker):
         'steps_per_second': steps_per_second,
     }
     result.update(counts)
+    print(result)
     return result
 
   def run(self,
