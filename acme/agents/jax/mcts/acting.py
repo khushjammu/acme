@@ -74,6 +74,7 @@ class MCTSActor(core.Actor):
         information (e.g. q-values) in addition to an action.
       backend: Which backend to use for running the policy.
     """
+    self._num_actions = num_actions
     self._random_key = random_key
     self._has_extras = has_extras
     self._extras: types.NestedArray = ()
