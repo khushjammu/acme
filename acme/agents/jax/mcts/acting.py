@@ -26,6 +26,7 @@ from acme.jax import utils
 from acme.jax import variable_utils
 import dm_env
 import jax
+import numpy as np
 
 # Useful type aliases.
 RecurrentState = TypeVar('RecurrentState')
