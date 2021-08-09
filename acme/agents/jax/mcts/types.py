@@ -14,33 +14,27 @@
 # limitations under the License.
 
 """Type aliases and assumptions that are specific to the MCTS agent."""
-from typing import Callable
 
-from acme.jax import networks
-import haiku as hk
-import jax.numpy as jnp
+from typing import Callable, Tuple, Union
+import numpy as np
+
+# pylint: disable=invalid-name
 
 # Assumption: actions are scalar and discrete (integral).
-Action = int
+Action = Union[int, np.int32, np.int64]
 
 # Assumption: observations are array-like.
-Observation = jnp.ndarray
+Observation = np.ndarray
 
 # Assumption: rewards and discounts are scalar.
-Reward = float
-Discount = float
+Reward = Union[float, np.float32, np.float64]
+Discount = Union[float, np.float32, np.float64]
 
 # Notation: policy logits/probabilities are simply a vector of floats.
-Probs = jnp.ndarray
+Probs = np.ndarray
 
 # Notation: the value function is scalar-valued.
 Value = float
 
-
-ModelFn = Callable[[Observation, Action], networks.Params]
-
-PolicyValueInitFn = Callable[[networks.PRNGKey, Observation, hk.LSTMState],
-                             networks.Params]
-PolicyValueFn = Callable[[networks.Params, Observation, hk.LSTMState],
-                         networks.LSTMOutputs]
-
+# Notation: the 'evaluation function' maps observations -> (probs, value).
+EvaluationFn = Callable[[Observation], Tuple[Probs, Value]]

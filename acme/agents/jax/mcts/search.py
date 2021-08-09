@@ -1,3 +1,18 @@
+# python3
+# Copyright 2018 DeepMind Technologies Limited. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """A Monte Carlo Tree Search implementation."""
 
 from typing import Callable, Dict
@@ -6,7 +21,7 @@ from acme.agents.tf.mcts import models
 from acme.agents.tf.mcts import types
 
 import dataclasses
-import jax.numpy as jnp
+import numpy as np
 
 
 @dataclasses.dataclass
@@ -20,7 +35,7 @@ class Node:
   total_value: float = 0.
   children: Dict[types.Action, 'Node'] = dataclasses.field(default_factory=dict)
 
-  def expand(self, prior: jnp.ndarray):
+  def expand(self, prior: np.ndarray):
     """Expands this node, adding child nodes."""
     assert prior.ndim == 1  # Prior should be a flat vector.
     for a, p in enumerate(prior):
@@ -34,21 +49,20 @@ class Node:
     return 0.
 
   @property
-  def children_visits(self) -> jnp.ndarray:
+  def children_visits(self) -> np.ndarray:
     """Return array of visit counts of visited children."""
-    return jnp.array([c.visit_count for c in self.children.values()])
+    return np.array([c.visit_count for c in self.children.values()])
 
   @property
-  def children_values(self) -> jnp.ndarray:
+  def children_values(self) -> np.ndarray:
     """Return array of values of visited children."""
-    return jnp.array([c.value for c in self.children.values()])
+    return np.array([c.value for c in self.children.values()])
 
 
 SearchPolicy = Callable[[Node], types.Action]
 
 
 def mcts(
-    rng_key: networks.PRNGKey,
     observation: types.Observation,
     model: models.Model,
     search_policy: SearchPolicy,
@@ -66,7 +80,7 @@ def mcts(
   assert prior.shape == (num_actions,)
 
   # Add exploration noise to the prior.
-  noise = jnp.random.dirichlet(rng_key, alpha=[dirichlet_alpha] * num_actions)
+  noise = np.random.dirichlet(alpha=[dirichlet_alpha] * num_actions)
   prior = prior * (1 - exploration_fraction) + noise * exploration_fraction
 
   # Create a fresh tree search.
@@ -131,23 +145,23 @@ def mcts(
 
 def bfs(node: Node) -> types.Action:
   """Breadth-first search policy."""
-  visit_counts = jnp.array([c.visit_count for c in node.children.values()])
+  visit_counts = np.array([c.visit_count for c in node.children.values()])
   return argmax(-visit_counts)
 
 
 def puct(node: Node, ucb_scaling: float = 1.) -> types.Action:
   """PUCT search policy, i.e. UCT with 'prior' policy."""
   # Action values Q(s,a).
-  value_scores = jnp.array([child.value for child in node.children.values()])
+  value_scores = np.array([child.value for child in node.children.values()])
   check_numerics(value_scores)
 
   # Policy prior P(s,a).
-  priors = jnp.array([child.prior for child in node.children.values()])
+  priors = np.array([child.prior for child in node.children.values()])
   check_numerics(priors)
 
   # Visit ratios.
-  visit_ratios = jnp.array([
-      jnp.sqrt(node.visit_count) / (child.visit_count + 1)
+  visit_ratios = np.array([
+      np.sqrt(node.visit_count) / (child.visit_count + 1)
       for child in node.children.values()
   ])
   check_numerics(visit_ratios)
@@ -160,23 +174,23 @@ def puct(node: Node, ucb_scaling: float = 1.) -> types.Action:
 def visit_count_policy(root: Node, temperature: float = 1.) -> types.Probs:
   """Probability weighted by visit^{1/temp} of children nodes."""
   visits = root.children_visits
-  if jnp.sum(visits) == 0:  # uniform policy for zero visits
+  if np.sum(visits) == 0:  # uniform policy for zero visits
     visits += 1
   rescaled_visits = visits**(1 / temperature)
-  probs = rescaled_visits / jnp.sum(rescaled_visits)
+  probs = rescaled_visits / np.sum(rescaled_visits)
   check_numerics(probs)
 
   return probs
 
 
-def argmax(values: jnp.ndarray) -> types.Action:
+def argmax(values: np.ndarray) -> types.Action:
   """Argmax with random tie-breaking."""
   check_numerics(values)
-  max_value = jnp.max(values)
-  return jnp.int32(jnp.random.choice(jnp.flatnonzero(values == max_value)))
+  max_value = np.max(values)
+  return np.int32(np.random.choice(np.flatnonzero(values == max_value)))
 
 
-def check_numerics(values: jnp.ndarray):
-  """Raises a ValueError if any of the ijnp.ts are NaN or Inf."""
-  if not jnp.isfinite(values).all():
-    raise ValueError('check_numerics failed. Ijnp.ts: {}. '.format(values))
+def check_numerics(values: np.ndarray):
+  """Raises a ValueError if any of the inputs are NaN or Inf."""
+  if not np.isfinite(values).all():
+    raise ValueError('check_numerics failed. Inputs: {}. '.format(values))

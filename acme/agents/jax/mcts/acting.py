@@ -1,69 +1,125 @@
-"""MCTS actor implementation."""
+# python3
+# Copyright 2018 DeepMind Technologies Limited. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-from typing import Optional
+"""MCTS (AlphaZero) JAX actor."""
+
+from typing import Callable, Generic, Optional, Tuple, TypeVar, Union
 
 from acme import adders
 from acme import core
-from acme.agents.jax.mcts import types
+from acme import types
+from acme.agents.jax import actor_core
+from acme.jax import networks as network_lib
+from acme.jax import utils
 from acme.jax import variable_utils
 import dm_env
-import haiku as hk
 import jax
-import jax.numpy as jnp
+
+# Useful type aliases.
+RecurrentState = TypeVar('RecurrentState')
+
+# Signatures for functions that sample from parameterised stochastic policies.
+FeedForwardPolicy = Callable[
+    [network_lib.Params, network_lib.PRNGKey, network_lib.Observation],
+    Union[network_lib.Action, Tuple[network_lib.Action, types.NestedArray]]]
+RecurrentPolicy = Callable[[
+    network_lib.Params, network_lib.PRNGKey, network_lib
+    .Observation, RecurrentState
+], Tuple[Union[network_lib.Action, Tuple[network_lib.Action,
+                                         types.NestedArray]], RecurrentState]]
 
 
 class MCTSActor(core.Actor):
+  """A simple feed-forward actor implemented in JAX.
+
+  An actor based on a policy which takes observations and outputs actions. It
+  also adds experiences to replay and updates the actor weights from the policy
+  on the learner.
+  """
+
+  _prev_timestep: dm_env.TimeStep
+
   def __init__(
       self,
-      environment_spec: specs.EnvironmentSpec,
-      model_fn: types.ModelFn,
-      policy_value_fn: types.PolicyValueFn,
-      num_simulations: int,
-      rng_key: networks_lib.PRNGKey,
-      variable_client: Optional[variable_utils.VariableClient] = None,
+      policy,
+      random_key: network_lib.PRNGKey,
+      variable_client: variable_utils.VariableClient,
+      model = None, # todo: sort out environment model
       adder: Optional[adders.Adder] = None,
+      has_extras: bool = False,
+      backend: Optional[str] = 'cpu',
   ):
+    """Initializes a feed forward actor.
 
-  # Store these for later use.
-  self._adder = adder
-  self._variable_client = variable_client
-  self._model_fn = model_fn
-  self._policy_value_fn = policy_value_fn
-  self._rng_key = rng_key
+    Args:
+      policy: A value-policy network.
+      random_key: Random key.
+      variable_client: The variable client to get policy parameters from.
+      adder: An adder to add experiences to.
+      has_extras: Flag indicating whether the policy returns extra
+        information (e.g. q-values) in addition to an action.
+      backend: Which backend to use for running the policy.
+    """
+    self._random_key = random_key
+    self._has_extras = has_extras
+    self._extras: types.NestedArray = ()
 
-  # Internalize hyperparameters.
-  self._num_actions = environment_spec.actions.num_values
-  self._num_simulations = num_simulations
-  self._actions = list(range(self._num_actions))
-  self._discount = discount # we got rid of this before, right?
+    # Adding batch dimension inside jit is much more efficient than outside.
+    def batched_policy(
+        params: network_lib.Params, key: network_lib.PRNGKey,
+        observation: network_lib.Observation
+    ) -> Tuple[Union[network_lib.Action, Tuple[
+        network_lib.Action, types.NestedArray]], network_lib.PRNGKey]:
+      # TODO(b/161332815): Make JAX Actor work with batched or unbatched inputs.
+      key, key2 = jax.random.split(key)
+      observation = utils.add_batch_dim(observation)
+      # output = policy(params, key2, observation)
+      logits, value = policy(params, key2, observation)
+      return (
+        utils.squeeze_batch_dim(logits), 
+        utils.squeeze_batch_dim(value)
+        ), key
 
-  # Make sure not to use a random policy after checkpoint restoration by
-  # assigning variables before running the environment loop.
-  if self._variable_client is not None:
-    self._variable_client.update_and_wait()
+    # this policy is the state-value model
+    self._policy = jax.jit(batched_policy, backend=backend)
 
-  # We need to save the policy so as to add it to replay on the next step.
-  self._probs = np.ones(shape=(self._num_actions,), dtype=np.float32) / self._num_actions
+    def forward(observation):
+      (logits, value), self._random_key = self._policy(
+        self._client.params, 
+        self._random_key, 
+        observation)
+      return logits, value
+    self._forward = forward
+
+    self._adder = adder
+    self._client = variable_client
+
+    # todo: pass these in somewhere
+    self._model = model
+    self._probs = np.ones(
+        shape=(self._num_actions,), dtype=np.float32) / self._num_actions
 
 
-  def _forward(self, observation: types.Observation) -> Tuple[types.Probs, types.Value]:
-    """Performs a forward pass of the policy-value network."""
-    logits, value = self._network(observation)
-    probs = jax.nn.softmax(logits)
+  def select_action(self,
+                    observation: network_lib.Observation) -> types.NestedArray:
+    if self._model.needs_reset:
+      self._model.reset(observation)
 
-    return probs, value
-
-
-  def select_action(self, observation: types.Observation) -> types.Action:
-  	"""Builds MCTS plan to select optimal action for a given observation."""
-    if self._state is None:
-      self._state = self._initial_state
-
-    # Compute a fresh MCTS plan.
     root = search.mcts(
-    		next(self._rng),
         observation,
-        model=self._model_fn,
+        model=self._model,
         search_policy=search.puct,
         evaluation=self._forward,
         num_simulations=self._num_simulations,
@@ -71,41 +127,35 @@ class MCTSActor(core.Actor):
         discount=self._discount,
     )
 
-    # The agent's policy is softmax w.r.t. the *visit counts* as in AlphaZero.
-		probs = search.visit_count_policy(root)
-		action = jax.random.choice(next(self._rng), self._actions, p=probs)
+    probs = search.visit_count_policy(root)
+    action = np.int32(np.random.choice(self._actions, p=probs))
 
-		# Save the policy probs so that we can add them to replay in `observe()`.
-		self._probs = probs.astype(jnp.float32)
+    # Save the policy probs so that we can add them to replay in `observe()`.
+    self._probs = probs.astype(np.float32)
 
-		return action
-
-
-		def update(self, wait: bool = False):
-		  """Fetches the latest variables from the variable source, if needed."""
-		  if self._variable_client:
-		    self._variable_client.update(wait)
+    # result, self._random_key = self._policy(self._client.params,
+    #                                         self._random_key, observation)
 
 
-		def observe_first(self, timestep: dm_env.TimeStep):
-		  self._prev_timestep = timestep
-		  if self._adder:
-		    self._adder.add_first(timestep)
+    # if self._has_extras:
+    #   action, self._extras = result
+    # else:
+    #   action = result
+    # return utils.to_numpy(action)
+    return action
 
+  def observe_first(self, timestep: dm_env.TimeStep):
+    self._prev_timestep = timestep
+    if self._adder:
+      self._adder.add_first(timestep)
 
-		def observe(self, action: types.Action, next_timestep: dm_env.TimeStep):
-		  """Updates the agent's internal model and adds the transition to replay."""
-		  self._model.update(self._prev_timestep, action, next_timestep) # this doesn't really conform to jax principles...
-		  self._prev_timestep = next_timestep
+  def observe(self, action: network_lib.Action, next_timestep: dm_env.TimeStep):
+    self._model.update(self._prev_timestep, action, next_timestep)
+    self._prev_timestep = next_timestep
 
-		  if self._adder:
-		    self._adder.add(action, next_timestep, extras={'pi': self._probs})
+    if self._adder:
+      self._adder.add(action, next_timestep, extras={'pi': self._probs})
+      # self._adder.add(action, next_timestep, extras=self._extras)
 
-
-  # @property
-  # def _params(self) -> Optional[hk.Params]:
-  #   if self._variable_client is None:
-  #     # If self._variable_client is None then we assume self._forward  does not
-  #     # use the parameters it is passed and just return None.
-  #     return None
-  #   return self._variable_client.params
+  def update(self, wait: bool = False):
+    self._client.update(wait)
