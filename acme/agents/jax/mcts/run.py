@@ -82,8 +82,15 @@ key_learner, key_actor = jax.random.split(jax.random.PRNGKey(config.seed))
 loss_fn = MCTSLoss()
 optimizer = optax.adam(5e-4)
 
+extra_spec = {
+    'pi':
+        specs.Array(
+            shape=(environment_spec.actions.num_values,), dtype=np.float32)
+}
+
 reverb_replay = replay.make_reverb_prioritized_nstep_replay(
     environment_spec=spec,
+    extra_spec=extra_spec,
     n_step=config.n_step,
     batch_size=config.batch_size,
     max_replay_size=config.max_replay_size,
