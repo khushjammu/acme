@@ -90,7 +90,7 @@ class MCTSLoss(LossFn):
       params: networks_lib.Params,
       batch: reverb.ReplaySample,
       key: networks_lib.PRNGKey,
-  ) -> Tuple[jnp.DeviceArray, learning_lib.LossExtra]:
+  ) -> Tuple[jnp.DeviceArray, LossExtra]:
     """Calculate a loss on a single batch of data."""
     del key
     transitions: types.Transition = batch.data
@@ -116,9 +116,9 @@ class MCTSLoss(LossFn):
       logits=logits
       )
 
-    reverb_update = learning_lib.ReverbUpdate(
+    reverb_update = ReverbUpdate(
         keys=keys, priorities=jnp.abs(td_error).astype(jnp.float64))
-    extra = learning_lib.LossExtra(metrics={}, reverb_update=reverb_update)
+    extra = LossExtra(metrics={}, reverb_update=reverb_update)
 
     return loss, extra
     # # Forward pass.
@@ -144,9 +144,9 @@ class MCTSLoss(LossFn):
 
     # # Reweight.
     # loss = jnp.mean(importance_weights * batch_loss)  # []
-    # reverb_update = learning_lib.ReverbUpdate(
+    # reverb_update = ReverbUpdate(
     #     keys=keys, priorities=jnp.abs(td_error).astype(jnp.float64))
-    # extra = learning_lib.LossExtra(metrics={}, reverb_update=reverb_update)
+    # extra = LossExtra(metrics={}, reverb_update=reverb_update)
     # return loss, extra
 
 # TODO: migrate this to multicore (commented version below)
