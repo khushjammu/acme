@@ -205,16 +205,13 @@ class ActorRay():
 
 @ray.remote
 class LearnerRay():
-  def __init__(self, reverb_address, shared_storage, log_dir=None, enable_checkpointing=False, verbose=False):
+  def __init__(self, reverb_address, shared_storage, random_key, log_dir=None, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
     self._enable_checkpointing = enable_checkpointing
     self._shared_storage = shared_storage
     self._client = reverb.Client(reverb_address)
 
     print("L - flag 0.5")
-
-    # todo: sort out the key
-    random_key = jax.random.PRNGKey(1701)
 
     # disabled the logger because it's not toooo useful
     # self._logger = ActorLogger()
@@ -351,6 +348,9 @@ if __name__ == '__main__':
     "terminate": False
   })
 
+  # todo: sort out the key
+  random_key = jax.random.PRNGKey(1701)
+
   forward_fn_transformed, \
   unroll_fn_transformed, \
   initial_state_fn_transformed = builder.network_factory()
@@ -372,6 +372,7 @@ if __name__ == '__main__':
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
+    random_key,
     log_dir=LOG_DIR, 
     enable_checkpointing=args.enable_checkpointing,
     verbose=True
