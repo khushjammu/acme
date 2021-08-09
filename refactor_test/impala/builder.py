@@ -149,7 +149,12 @@ class Builder():
 
   def make_adder(self, reverb_client):
     """Creates a reverb adder."""
-    return adders.NStepTransitionAdder(reverb_client, self.config.n_step, self.config.discount)
+    return adders.SequenceAdder(
+      client=reverb_client,
+      period=self.config.sequence_period,
+      sequence_length=self.config.sequence_length,
+    )
+    #return adders.NStepTransitionAdder(reverb_client, self.config.n_step, self.config.discount)
 
   def make_learner(
       self,
