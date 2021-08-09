@@ -84,8 +84,6 @@ class MCTSLoss(LossFn):
       logits=logits
     )
 
-    print("policy loss:", policy_loss)
-
     return value_loss + policy_loss
 
   def __call__(
@@ -98,9 +96,6 @@ class MCTSLoss(LossFn):
     """Calculate a loss on a single batch of data."""
     del key
     transitions: types.Transition = batch.data
-    print(transitions)
-    print(batch.data)
-    print(batch.info) # need to figure out how to get the pi
     keys, probs, *_ = batch.info
 
     logits, value = network.apply(params, transitions.observation)
@@ -152,8 +147,8 @@ class MCTSLearner(acme.Learner):
     self.network = network
 
     # Internalize the loss_fn with network.
-    # self._loss = jax.jit(functools.partial(loss_fn, self.network))
-    self._loss = functools.partial(loss_fn, self.network)
+    self._loss = jax.jit(functools.partial(loss_fn, self.network))
+    # self._loss = functools.partial(loss_fn, self.network)
 
     # SGD performs the loss, optimizer update and periodic target net update.
     def sgd_step(state: TrainingState,
@@ -184,8 +179,8 @@ class MCTSLearner(acme.Learner):
 
     sgd_step = utils.process_multiple_batches(sgd_step, num_sgd_steps_per_step,
                                               postprocess_aux)
-    self._sgd_step = sgd_step
-    # self._sgd_step = jax.jit(sgd_step)
+    # self._sgd_step = sgd_step
+    self._sgd_step = jax.jit(sgd_step)
 
     # Internalise agent components
     # self._data_iterator = utils.prefetch(data_iterator)
