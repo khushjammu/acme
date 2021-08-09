@@ -26,6 +26,8 @@ import dm_env
 from acme import wrappers
 import pickle
 
+import time
+
 @dataclasses.dataclass
 class Checkpoint:
   """Holds the checkpoint state for the environment simulator."""
@@ -63,14 +65,18 @@ class Simulator(base.Model):
     return self.step(action)
 
   def save_checkpoint(self):
+    t = time.time()
     self._checkpoint = Checkpoint(
         needs_reset=self._needs_reset,
         environment=copy.deepcopy(self._env._environment),
     )
+    print(f"took {time.time()-t} to save checkpoint")
 
   def load_checkpoint(self):
+    t = time.time()
     self._env = wrappers.SinglePrecisionWrapper(copy.deepcopy(self._checkpoint.environment))
     self._needs_reset = self._checkpoint.needs_reset
+    print(f"took {time.time()-t} to restore checkpoint")
 
   def step(self, action: types.Action) -> dm_env.TimeStep:
     if self._needs_reset:
