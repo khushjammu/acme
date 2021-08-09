@@ -236,12 +236,6 @@ class LearnerRay():
 
     optimizer = builder.make_optimizer()
 
-    builder.make_reverb(
-      initial_state_fn_transformed.apply(
-        initial_state_fn_transformed.init(random_key)
-      )
-    )
-
     print("L - flag 1")
 
     data_iterator = datasets.make_reverb_dataset(
@@ -356,6 +350,24 @@ if __name__ == '__main__':
   storage.set_info.remote({
     "terminate": False
   })
+
+  forward_fn_transformed, \
+  unroll_fn_transformed, \
+  initial_state_fn_transformed = builder.network_factory()
+
+  extra_spec = {
+    'core_state': initial_state_fn_transformed.apply(initial_state_fn_transformed.init(random_key)),
+    'logits': np.ones(shape=(builder.spec.actions.num_values,), dtype=np.float32)
+  }
+
+  r_queue = replay.make_reverb_online_queue(
+    environment_spec=builder.spec,
+    extra_spec=extra_spec,
+    max_queue_size=builder.config.max_queue_size,
+    sequence_length=builder.config.sequence_length,
+    sequence_period=builder.config.sequence_period,
+    batch_size=builder.config.batch_size,
+  )
 
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",

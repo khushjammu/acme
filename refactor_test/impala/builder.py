@@ -67,21 +67,6 @@ class Builder():
     self.config = config
     self.spec = specs.make_environment_spec(self.environment_factory())
 
-  def make_reverb(self, core_state):
-    extra_spec = {
-      'core_state': core_state,
-      'logits': np.ones(shape=(self.spec.actions.num_values,), dtype=np.float32)
-    }
-
-    r_queue = replay.make_reverb_online_queue(
-      environment_spec=self.spec,
-      extra_spec=extra_spec,
-      max_queue_size=self.config.max_queue_size,
-      sequence_length=self.config.sequence_length,
-      sequence_period=self.config.sequence_period,
-      batch_size=self.config.batch_size,
-    )
-
   def environment_factory(self, evaluation: bool = False, level: str = 'BreakoutNoFrameskip-v4'):
     """Creates environment."""
     # todo: add configurable ram-states
