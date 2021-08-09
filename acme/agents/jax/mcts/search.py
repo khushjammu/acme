@@ -24,7 +24,6 @@ import dataclasses
 import numpy as np
 
 import time
-import jax
 
 
 @dataclasses.dataclass
@@ -81,7 +80,6 @@ def mcts(
   # Evaluate the prior policy for this state.
   
   prior, value = evaluation(observation)
-  print("prior:", prior, type(prior))
   assert prior.shape == (num_actions,)
 
   # Add exploration noise to the prior.
@@ -159,16 +157,16 @@ def bfs(node: Node) -> types.Action:
 def puct(node: Node, ucb_scaling: float = 1.) -> types.Action:
   """PUCT search policy, i.e. UCT with 'prior' policy."""
   # Action values Q(s,a).
-  value_scores = jnp.array([child.value for child in node.children.values()])
+  value_scores = np.array([child.value for child in node.children.values()])
   check_numerics(value_scores)
 
   # Policy prior P(s,a).
-  priors = jnp.array([child.prior for child in node.children.values()])
+  priors = np.array([child.prior for child in node.children.values()])
   check_numerics(priors)
 
   # Visit ratios.
-  visit_ratios = jnp.array([
-      jnp.sqrt(node.visit_count) / (child.visit_count + 1)
+  visit_ratios = np.array([
+      np.sqrt(node.visit_count) / (child.visit_count + 1)
       for child in node.children.values()
   ])
   check_numerics(visit_ratios)

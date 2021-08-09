@@ -44,6 +44,7 @@ config = config.MCTSConfig(
   batch_size=16
   )
 
+jax.config.update('jax_platform_name', "cpu")
 
 raw_environment = bsuite.load_from_id("catch/0")
 environment = wrappers.SinglePrecisionWrapper(raw_environment)
