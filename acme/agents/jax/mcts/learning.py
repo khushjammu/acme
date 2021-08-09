@@ -94,7 +94,9 @@ class MCTSLoss(LossFn):
   ) -> Tuple[jnp.DeviceArray, LossExtra]:
     """Calculate a loss on a single batch of data."""
     del key
-    transitions: types.Transition, extras = batch.data
+    transitions: types.Transition = None
+    transitions, extras = batch.data
+    
     # print(batch.data)
     print(batch.info) # need to figure out how to get the pi
     keys, probs, *_ = batch.info
