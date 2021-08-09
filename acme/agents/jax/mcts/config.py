@@ -30,7 +30,7 @@ class MCTSConfig:
   # Learning rule
   learning_rate: float = 5e-4  # Learning rate for Adam optimizer.
   discount: float = 0.99  # Discount rate applied to value per timestep.
-  n_step: int = 5  # N-step TD learning.
+  n_step: int = 1  # N-step TD learning.
   target_update_period: int = 100  # Update target network every period.
   max_gradient_norm: float = np.inf  # For gradient clipping.
 
