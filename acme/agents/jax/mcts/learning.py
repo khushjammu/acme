@@ -121,7 +121,7 @@ class MCTSLoss(LossFn):
     print("loss:", loss)
 
     reverb_update = ReverbUpdate(
-        keys=keys, priorities=jnp.abs(td_error).astype(jnp.float64))
+        keys=keys, priorities=jnp.abs(loss).astype(jnp.float64))
     extra = LossExtra(metrics={}, reverb_update=reverb_update)
 
     return loss, extra
