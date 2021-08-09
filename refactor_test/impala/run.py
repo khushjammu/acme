@@ -6,6 +6,7 @@ from acme.jax import networks as networks_lib
 from acme.agents import replay
 from typing import Generic, List, Optional, Sequence, TypeVar
 
+import numpy as np
 import ray
 import jax
 import jax.numpy as jnp
