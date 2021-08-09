@@ -27,9 +27,9 @@ import haiku as hk
 import numpy as np
 import jax
 
-import MCTSConfig
+import config
 
-config = MCTSConfig()
+config = config.MCTSConfig()
 
 
 # Create a fake environment to test with.
