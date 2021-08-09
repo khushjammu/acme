@@ -43,7 +43,7 @@ config = IMPALAConfig(
   learning_rate=2e-4,
 )
 
-builder = Builder(config)
+# builder = Builder(config)
 
 @ray.remote
 class SharedStorage():
@@ -116,93 +116,93 @@ class SharedStorage():
       else:
         raise TypeError
 
-@ray.remote(num_cpus=1)
-class ActorRay():
-  """Glorified wrapper for environment loop."""
+# @ray.remote(num_cpus=1)
+# class ActorRay():
+#   """Glorified wrapper for environment loop."""
   
-  def __init__(self, reverb_address, variable_source, shared_storage, log_dir=None, id=None, verbose=False):
-    self._verbose = verbose
-    self._id = str(id) or uuid.uuid1()
+#   def __init__(self, reverb_address, variable_source, shared_storage, log_dir=None, id=None, verbose=False):
+#     self._verbose = verbose
+#     self._id = str(id) or uuid.uuid1()
 
-    self._shared_storage = shared_storage
+#     self._shared_storage = shared_storage
 
-    self._client = reverb.Client(reverb_address)
+#     self._client = reverb.Client(reverb_address)
 
-    print("A - flag 0.5")
+#     print("A - flag 0.5")
 
-    forward_fn_transformed, \
-    unroll_fn_transformed, \
-    initial_state_fn_transformed = builder.network_factory()
+#     forward_fn_transformed, \
+#     unroll_fn_transformed, \
+#     initial_state_fn_transformed = builder.network_factory()
 
-    # print("A - flag 1")
-    # todo: make this proper splitting and everything
-    random_key=jax.random.PRNGKey(1701)
+#     # print("A - flag 1")
+#     # todo: make this proper splitting and everything
+#     random_key=jax.random.PRNGKey(1701)
 
-    self._actor = builder.make_actor(
-      forward_fn_transformed.apply,
-      initial_state_fn_transformed.init,
-      initial_state_fn_transformed.apply,
-      random_key,
-      adder=builder.make_adder(self._client),
-      variable_source=variable_source,
-      temp_client_key=self._id
-    )
+#     self._actor = builder.make_actor(
+#       forward_fn_transformed.apply,
+#       initial_state_fn_transformed.init,
+#       initial_state_fn_transformed.apply,
+#       random_key,
+#       adder=builder.make_adder(self._client),
+#       variable_source=variable_source,
+#       temp_client_key=self._id
+#     )
 
-    print("A - flag 2")
-    self._environment = builder.environment_factory()
-    self._counter = counting.Counter() # prefix='actor'
-    self._logger = ActorLogger() # TODO: use config for `interval` arg
+#     print("A - flag 2")
+#     self._environment = builder.environment_factory()
+#     self._counter = counting.Counter() # prefix='actor'
+#     self._logger = ActorLogger() # TODO: use config for `interval` arg
 
-    self._env_loop = CustomEnvironmentLoop(
-      self._environment, 
-      self._actor, 
-      counter=self._counter,
-      logger=self._logger,
-      should_update=True
-    )
+#     self._env_loop = CustomEnvironmentLoop(
+#       self._environment, 
+#       self._actor, 
+#       counter=self._counter,
+#       logger=self._logger,
+#       should_update=True
+#     )
 
-    if log_dir:
-      self._tensorboard_writer = tf.summary.create_file_writer(f"{log_dir}/actor-{self._id}")
-    else:
-      self._tensorboard_writer = None
+#     if log_dir:
+#       self._tensorboard_writer = tf.summary.create_file_writer(f"{log_dir}/actor-{self._id}")
+#     else:
+#       self._tensorboard_writer = None
 
-    print("A - flag 3")
+#     print("A - flag 3")
 
 
-    if self._verbose: print(f"Actor {self._id}: instantiated on {jnp.ones(3).device_buffer.device()}.")
+#     if self._verbose: print(f"Actor {self._id}: instantiated on {jnp.ones(3).device_buffer.device()}.")
   
-  def ready(self):
-    return True
+#   def ready(self):
+#     return True
 
-  def log_to_tensorboard(self, result):
-    """Logs statistics to `self._tensorboard_logger`."""
+#   def log_to_tensorboard(self, result):
+#     """Logs statistics to `self._tensorboard_logger`."""
 
-    with self._tensorboard_writer.as_default():
-      tf.summary.scalar("episode_return", result["episode_return"], step=result["episodes"])
-      tf.summary.scalar("episode_length", result["episode_length"], step=result["episodes"])
-      tf.summary.scalar("steps_per_second", result["steps_per_second"], step=result["episodes"])
-      tf.summary.scalar("total_steps", result["steps"], step=result["episodes"])
+#     with self._tensorboard_writer.as_default():
+#       tf.summary.scalar("episode_return", result["episode_return"], step=result["episodes"])
+#       tf.summary.scalar("episode_length", result["episode_length"], step=result["episodes"])
+#       tf.summary.scalar("steps_per_second", result["steps_per_second"], step=result["episodes"])
+#       tf.summary.scalar("total_steps", result["steps"], step=result["episodes"])
     
-  def run(self):
-    if self._verbose: print(f"Actor {self._id}: beginning training.")
+#   def run(self):
+#     if self._verbose: print(f"Actor {self._id}: beginning training.")
 
-    steps=0
+#     steps=0
 
-    while not ray.get(self._shared_storage.get_info.remote("terminate")):
-      result = self._env_loop.run_episode()
-      result.update({
-        "id": self._id
-        })
+#     while not ray.get(self._shared_storage.get_info.remote("terminate")):
+#       result = self._env_loop.run_episode()
+#       result.update({
+#         "id": self._id
+#         })
 
-      if self._tensorboard_writer:
-        self.log_to_tensorboard(result)
+#       if self._tensorboard_writer:
+#         self.log_to_tensorboard(result)
 
-      self._logger.write(result)
+#       self._logger.write(result)
 
-      self._shared_storage.add_result.remote(result) # we add to shared storage too for calculating return distribution etc.
-      steps += result['episode_length']
+#       self._shared_storage.add_result.remote(result) # we add to shared storage too for calculating return distribution etc.
+#       steps += result['episode_length']
 
-    if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
+#     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
 
 @ray.remote
 class LearnerRay():
