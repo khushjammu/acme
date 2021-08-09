@@ -76,7 +76,9 @@ def mcts(
   """Does Monte Carlo tree search (MCTS), AlphaZero style."""
 
   # Evaluate the prior policy for this state.
+  t = time.time()
   prior, value = evaluation(observation)
+  print(f"time taken for eval: {time.time()-t}")
   assert prior.shape == (num_actions,)
 
   # Add exploration noise to the prior.
