@@ -15,7 +15,7 @@
 
 ## How-To
 
-We've pre-loaded a ~430 mean return checkpoint on node-4 and node-5 for everyone to play with.
+We've pre-loaded a *~430 mean return* (Breakout) checkpoint on node-4 and node-5 for everyone to play with.
 
 ### To enter the testing environment
 1. SSH into node-4 or node-5
