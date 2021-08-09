@@ -206,11 +206,13 @@ class ActorRay():
 
 @ray.remote#(resources={"tpu": 1})
 class LearnerRay():
-  def __init__(self, reverb_address, shared_storage, random_key, devices=None, log_dir=None, enable_checkpointing=False, verbose=False):
+  def __init__(self, reverb_address, shared_storage, random_key, log_dir=None, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
     self._enable_checkpointing = enable_checkpointing
     self._shared_storage = shared_storage
     self._client = reverb.Client(reverb_address)
+
+    print("devices:", jax.devices())
 
     print("L - flag 0.5")
 
@@ -255,7 +257,6 @@ class LearnerRay():
       data_iterator, 
       self._client,
       random_key,
-      devices=devices,
       logger=self._tensorboard_logger
     )
 
@@ -372,13 +373,12 @@ if __name__ == '__main__':
     batch_size=builder.config.batch_size,
   )
 
-  print("devices:", )
+  print("devices:", jax.devices())
 
   learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
     random_key,
-    devices=jax.devices(),
     log_dir=LOG_DIR, 
     enable_checkpointing=args.enable_checkpointing,
     verbose=True
