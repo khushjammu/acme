@@ -391,18 +391,18 @@ if __name__ == '__main__':
   if args.initial_checkpoint:
     ray.get(learner.load_checkpoint.remote(args.initial_checkpoint_path))
 
-  actors = [ActorRay.remote(
-    "localhost:8000", 
-    learner, 
-    storage,
-    log_dir=LOG_DIR,
-    verbose=True,
-    id=i
-  ) for i in range(args.num_actors)] # 50
+  # actors = [ActorRay.remote(
+  #   "localhost:8000", 
+  #   learner, 
+  #   storage,
+  #   log_dir=LOG_DIR,
+  #   verbose=True,
+  #   id=i
+  # ) for i in range(args.num_actors)] # 50
 
-  [a.run.remote() for a in actors]
+  # [a.run.remote() for a in actors]
 
-  learner.run.remote(total_learning_steps=args.total_learning_steps)
+  # learner.run.remote(total_learning_steps=args.total_learning_steps)
 
   while not ray.get(storage.get_info.remote("terminate")):
     time.sleep(1)

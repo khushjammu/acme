@@ -139,7 +139,7 @@ class Builder():
     variable_client.update_and_wait()
 
     actor = acting.IMPALAActor(
-      forward_fn=jax.jit(forward_fn),#, backend='tpu'),
+      forward_fn=jax.jit(forward_fn),#, backend='cpu'),
       initial_state_init_fn=initial_state_init_fn,
       initial_state_fn=initial_state_fn,
       rng=hk.PRNGSequence(random_key),
