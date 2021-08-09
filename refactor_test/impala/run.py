@@ -45,7 +45,7 @@ config = IMPALAConfig(
 
 # builder = Builder(config)
 
-@ray.remote
+@ray.remote(num_cpus=1)
 class SharedStorage():
     """
     Class which run in a dedicated thread to store the network weights and some information.
@@ -204,7 +204,7 @@ class SharedStorage():
 
 #     if self._verbose: print(f"Actor {self._id}: terminated at {steps} steps.") 
 
-# @ray.remote
+@ray.remote(resources={"tpu": 1})
 class LearnerRay():
   def __init__(self, reverb_address, shared_storage, random_key, log_dir=None, enable_checkpointing=False, verbose=False):
     self._verbose = verbose
@@ -374,8 +374,8 @@ if __name__ == '__main__':
 
   print("devices:", jax.devices())
 
-  # learner = LearnerRay.options(max_concurrency=2).remote(
-  learner = LearnerRay(
+  # learner = LearnerRay(
+  learner = LearnerRay.options(max_concurrency=2).remote(
     "localhost:8000",
     storage,
     random_key,
