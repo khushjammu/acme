@@ -85,7 +85,8 @@ key_learner, key_actor = jax.random.split(jax.random.PRNGKey(config.seed))
 
 
 loss_fn = MCTSLoss()
-optimizer = optax.adam(1e-3)
+# optimizer = optax.adam(1e-3)
+optimizer = optax.adam(1e-4)
 
 extra_spec = {
     'pi':
