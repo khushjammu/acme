@@ -22,7 +22,9 @@ from acme.agents.tf.mcts import types
 
 import dataclasses
 import numpy as np
+
 import time
+
 
 @dataclasses.dataclass
 class Node:
@@ -76,9 +78,8 @@ def mcts(
   """Does Monte Carlo tree search (MCTS), AlphaZero style."""
 
   # Evaluate the prior policy for this state.
-  t = time.time()
+  
   prior, value = evaluation(observation)
-  print(f"time taken for eval: {time.time()-t}")
   assert prior.shape == (num_actions,)
 
   # Add exploration noise to the prior.
@@ -98,6 +99,7 @@ def mcts(
 
     # Generate a trajectory.
     timestep = None
+    t = time.time()
     while node.children:
       # Select an action according to the search policy.
       action = search_policy(node)
@@ -110,7 +112,7 @@ def mcts(
       node.reward = timestep.reward or 0.
       node.terminal = timestep.last()
       trajectory.append(node)
-
+    print(f"time taken for initial trajectory generation: {time.time()-t}")
     if timestep is None:
       raise ValueError('Generated an empty rollout; this should not happen.')
 
