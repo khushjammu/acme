@@ -19,6 +19,7 @@ CustomConfig
 from acme import specs
 from acme.jax import utils
 from acme.jax import networks as networks_lib
+from acme.agents import replay
 from acme.agents.jax import actors
 from acme.agents.jax.impala import learning
 
@@ -65,14 +66,14 @@ class Builder():
     self.config = config
     self.spec = specs.make_environment_spec(self.environment_factory())
 
-  def make_reverb(self, core_state, spec):
+  def make_reverb(self, core_state):
     extra_spec = {
       'core_state': core_state,
-      'logits': np.ones(shape=(spec.actions.num_values,), dtype=np.float32)
+      'logits': np.ones(shape=(self.spec.actions.num_values,), dtype=np.float32)
     }
 
-    reverb_queue = replay.make_reverb_online_queue(
-      environment_spec=spec,
+    replay.make_reverb_online_queue(
+      environment_spec=self.spec,
       extra_spec=extra_spec,
       max_queue_size=self.config.max_queue_size,
       sequence_length=self.config.sequence_length,
@@ -99,19 +100,19 @@ class Builder():
         wrappers.SinglePrecisionWrapper,
     ])
 
-  def network_factory(self, spec):
+  def network_factory(self):
     """Creates networks."""
 
     def forward_fn(x, s):
-      model = IMPALARAMNetwork(spec.actions.num_values)
+      model = IMPALARAMNetwork(self.spec.actions.num_values)
       return model(x, s)
 
     def initial_state_fn(batch_size: Optional[int] = None):
-      model = IMPALARAMNetwork(spec.actions.num_values)
+      model = IMPALARAMNetwork(self.spec.actions.num_values)
       return model.initial_state(batch_size)
 
     def unroll_fn(inputs, state):
-      model = IMPALARAMNetwork(spec.actions.num_values)
+      model = IMPALARAMNetwork(self.spec.actions.num_values)
       return hk.static_unroll(model, inputs, state)
 
     forward_fn_transformed = hk.without_apply_rng(hk.transform(
@@ -176,6 +177,7 @@ class Builder():
     ):
     # TODO: add a sexy logger here
     # TODO: remove checkpoint=None ?
+
     learner = learning.IMPALALearner(
       obs_spec=self.spec.observations,
       unroll_init_fn=unroll_init_fn,
@@ -192,8 +194,6 @@ class Builder():
       baseline_cost=self.config.baseline_cost,
       max_abs_reward=self.config.max_abs_reward,
     )
-
-    self.make_reverb(initial_state_init_fn(random_key), spec)
 
     return learner
 

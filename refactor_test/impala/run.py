@@ -213,20 +213,11 @@ class LearnerRay():
 
     print("L - flag 0.5")
 
-    data_iterator = datasets.make_reverb_dataset(
-      table="priority_table",
-      server_address=reverb_address,
-      batch_size=config.batch_size,
-      prefetch_size=4,
-    ).as_numpy_iterator()
-
-    print("L - flag 1")
     # todo: sort out the key
+    random_key = jax.random.PRNGKey(1701)
 
     # disabled the logger because it's not toooo useful
     # self._logger = ActorLogger()
-    random_key = jax.random.PRNGKey(1701)
-
 
     if log_dir:
       self._tensorboard_writer = tf.summary.create_file_writer(f"{log_dir}/learner")
@@ -245,6 +236,19 @@ class LearnerRay():
 
     optimizer = builder.make_optimizer()
 
+    builder.make_reverb(initial_state_fn_transformed.init(random_key))
+
+    print("L - flag 1")
+
+    data_iterator = datasets.make_reverb_dataset(
+      table="priority_table",
+      server_address=reverb_address,
+      batch_size=config.batch_size,
+      prefetch_size=4,
+    ).as_numpy_iterator()
+
+    print("L - flag 2")
+
     self._learner = builder.make_learner(
       unroll_fn_transformed.init,
       unroll_fn_transformed.apply,
@@ -257,7 +261,8 @@ class LearnerRay():
       logger=self._tensorboard_logger
     )
 
-    print("L - flag 2")
+    print("L - flag 3")
+    
     print("devices:", jax.devices())
     if self._verbose: print(f"Learner: instantiated on {jnp.ones(3).device_buffer.device()}.")
 
