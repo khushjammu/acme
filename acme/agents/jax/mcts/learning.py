@@ -79,7 +79,7 @@ class MCTSLoss(LossFn):
     )
 
     policy_loss = rlax.categorical_cross_entropy(
-      labels=labsl,
+      labels=label,
       logits=probs
     )
 
