@@ -20,7 +20,9 @@ class IMPALAConfig:
   max_gradient_norm: float = np.inf
 
   # Optimizer options
-  learning_rate: float = 1e-4
+  learning_rate: float = 5e-5
+  terminal_learning_rate: float = 5e-8  # Final learning rate scheduler applies
+  schedule_steps: int = 5 # Number of steps between starting LR and terminal LR
   adam_momentum_decay: float = 0.0
   adam_variance_decay: float = 0.99
 
