@@ -223,6 +223,7 @@ class MCTSLearner(acme.Learner):
     # Update our counts and record it.
     result = self._counter.increment(steps=1)
     result.update(extra.metrics)
+    print(result)
     self._logger.write(result)
 
   def get_variables(self, names: List[str]) -> List[networks_lib.Params]:
