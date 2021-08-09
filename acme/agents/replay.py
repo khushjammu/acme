@@ -98,7 +98,7 @@ def make_reverb_online_queue(
   signature = adders.SequenceAdder.signature(environment_spec, extra_spec)
   queue = reverb.Table.queue(
       name=replay_table_name, max_size=max_queue_size, signature=signature)
-  server = reverb.Server([queue], port=None)
+  server = reverb.Server([queue], port=8000)
   can_sample = lambda: queue.can_sample(batch_size)
 
   # Component to add things into replay.
