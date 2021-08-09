@@ -2,6 +2,7 @@ from acme.adders import reverb as adders_reverb
 import dataclasses
 import numpy as np
 from acme import types
+from typing import Union
 
 @dataclasses.dataclass
 class IMPALAConfig:
