@@ -384,11 +384,11 @@ if __name__ == '__main__':
   )
 
   # important to force the learner onto TPU
-  ray.get(learner.get_variables.remote(""))
+  # ray.get(learner.get_variables.remote(""))
 
   # load the initial checkpoint if relevant
-  if args.initial_checkpoint:
-    ray.get(learner.load_checkpoint.remote(args.initial_checkpoint_path))
+  # if args.initial_checkpoint:
+  #   ray.get(learner.load_checkpoint.remote(args.initial_checkpoint_path))
 
   # actors = [ActorRay.remote(
   #   "localhost:8000", 
