@@ -116,7 +116,7 @@ actor = MCTSActor(
     num_actions=spec.actions.num_values,
     num_simulations=10,
     discount=1.,
-    model = model, # todo: sort out environment model
+    model=model, # todo: sort out environment model
     adder=reverb_replay.adder
     # adder: Optional[adders.Adder] = None,
 )
@@ -136,7 +136,7 @@ class MCTS(agent.Agent):
         observations_per_step=1,
     )
 
-myagent = MCTS(actor, learner)
+# myagent = MCTS(actor, learner)
 
 
 # agent = dqn.DQN(
@@ -148,5 +148,5 @@ myagent = MCTS(actor, learner)
 
 # Try running the environment loop. We have no assertions here because all
 # we care about is that the agent runs without raising any errors.
-loop = acme.EnvironmentLoop(environment, myagent)
+loop = acme.EnvironmentLoop(environment, actor)
 loop.run(num_episodes=20)
