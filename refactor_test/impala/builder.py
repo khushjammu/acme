@@ -166,6 +166,7 @@ class Builder():
       data_iterator,
       reverb_client,
       random_key,
+      devices=None,
       logger=None,
       checkpoint=None
     ):
@@ -187,6 +188,7 @@ class Builder():
       entropy_cost=self.config.entropy_cost,
       baseline_cost=self.config.baseline_cost,
       max_abs_reward=self.config.max_abs_reward,
+      devices=devices,
     )
 
     return learner
