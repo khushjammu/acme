@@ -101,12 +101,12 @@ class MCTSActor(core.Actor):
 
     # this policy is the state-value model
     # self._policy = jax.jit(batched_policy, backend=backend)
-    self._policy = batched_policy
+    self._policy = jax.jit(batched_policy)
 
-    # def forward(observation):
-    #   logits, value = self._policy(self._client.params, observation)
-    #   return logits, value
-    # self._forward = forward
+    def forward(observation):
+      logits, value = self._policy(self._client.params, observation)
+      return logits, value
+    self._forward = forward
 
     self._adder = adder
     self._client = variable_client
@@ -128,7 +128,7 @@ class MCTSActor(core.Actor):
         observation,
         model=self._model,
         search_policy=search.puct,
-        evaluation=self._policy,
+        evaluation=self._forward,
         num_simulations=self._num_simulations,
         num_actions=self._num_actions,
         discount=self._discount,
