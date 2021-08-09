@@ -155,7 +155,6 @@ def bfs(node: Node) -> types.Action:
   return argmax(-visit_counts)
 
 
-@jax.jit
 def puct(node: Node, ucb_scaling: float = 1.) -> types.Action:
   """PUCT search policy, i.e. UCT with 'prior' policy."""
   # Action values Q(s,a).
