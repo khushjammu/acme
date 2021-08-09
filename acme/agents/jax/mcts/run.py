@@ -96,7 +96,7 @@ learner = MCTSLearner(
   # logger: Optional[loggers.Logger] = None,
   )
 
-def policy(params: networks_lib.Params,
+def policy(params: networks_lib.Params,key,
            observation: jnp.ndarray) -> jnp.ndarray:
   return network.apply(params, observation)
 
