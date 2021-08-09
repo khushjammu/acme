@@ -23,7 +23,6 @@ from acme.agents.tf.mcts import types
 import dataclasses
 import numpy as np
 
-import time
 
 
 @dataclasses.dataclass
@@ -102,9 +101,7 @@ def mcts(
     
     while node.children:
       # Select an action according to the search policy.
-      t = time.time()
       action = search_policy(node)
-      print(f"time taken for PUCT: {time.time()-t}")
       # Point the node at the corresponding child.
       node = node.children[action]
 
