@@ -77,13 +77,16 @@ class MCTSLoss(LossFn):
       discount_t=discount_t,
       v_t=v_t,
     )
+    value_loss = jnp.square(value_loss)
 
     policy_loss = rlax.categorical_cross_entropy(
       labels=labels,
       logits=logits
     )
 
-    return jnp.square(value_loss + policy_loss)
+    print("policy loss:", policy_loss)
+
+    return value_loss + policy_loss
 
   def __call__(
       self,
@@ -149,7 +152,8 @@ class MCTSLearner(acme.Learner):
     self.network = network
 
     # Internalize the loss_fn with network.
-    self._loss = jax.jit(functools.partial(loss_fn, self.network))
+    # self._loss = jax.jit(functools.partial(loss_fn, self.network))
+    self._loss = functools.partial(loss_fn, self.network)
 
     # SGD performs the loss, optimizer update and periodic target net update.
     def sgd_step(state: TrainingState,
@@ -180,7 +184,8 @@ class MCTSLearner(acme.Learner):
 
     sgd_step = utils.process_multiple_batches(sgd_step, num_sgd_steps_per_step,
                                               postprocess_aux)
-    self._sgd_step = jax.jit(sgd_step)
+    self._sgd_step = sgd_step
+    # self._sgd_step = jax.jit(sgd_step)
 
     # Internalise agent components
     # self._data_iterator = utils.prefetch(data_iterator)
