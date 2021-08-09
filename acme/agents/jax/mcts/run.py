@@ -96,7 +96,8 @@ reverb_replay = replay.make_reverb_prioritized_nstep_replay(
     n_step=config.n_step,
     batch_size=config.batch_size,
     max_replay_size=config.max_replay_size,
-    min_replay_size=config.min_replay_size,
+    min_replay_size=1,
+    # min_replay_size=config.min_replay_size,
     priority_exponent=config.priority_exponent,
     discount=config.discount,
 )
@@ -141,7 +142,7 @@ class MCTS(agent.Agent):
     super().__init__(
         actor=actor,
         learner=learner,
-        min_observations=10,
+        min_observations=20,
         observations_per_step=1,
     )
 
