@@ -89,31 +89,24 @@ class MCTSActor(core.Actor):
 
     # Adding batch dimension inside jit is much more efficient than outside.
     def batched_policy(
-        params: network_lib.Params, key: network_lib.PRNGKey,
+        params: network_lib.Params,
         observation: network_lib.Observation
     ) -> Tuple[Union[network_lib.Action, Tuple[
         network_lib.Action, types.NestedArray]], network_lib.PRNGKey]:
       # TODO(b/161332815): Make JAX Actor work with batched or unbatched inputs.
-      key, key2 = jax.random.split(key)
       observation = utils.add_batch_dim(observation)
       # output = policy(params, key2, observation)
-      logits, value = policy(params, key2, observation)
-      return (
-        utils.squeeze_batch_dim(logits), 
-        utils.squeeze_batch_dim(value)
-        ), key
+      logits, value = policy(params, observation)
+      return utils.squeeze_batch_dim(logits), utils.squeeze_batch_dim(value)
 
     # this policy is the state-value model
     # self._policy = jax.jit(batched_policy, backend=backend)
     self._policy = batched_policy
 
-    def forward(observation):
-      (logits, value), self._random_key = self._policy(
-        self._client.params, 
-        self._random_key, 
-        observation)
-      return logits, value
-    self._forward = forward
+    # def forward(observation):
+    #   logits, value = self._policy(self._client.params, observation)
+    #   return logits, value
+    # self._forward = forward
 
     self._adder = adder
     self._client = variable_client
@@ -135,7 +128,7 @@ class MCTSActor(core.Actor):
         observation,
         model=self._model,
         search_policy=search.puct,
-        evaluation=self._forward,
+        evaluation=self._policy,
         num_simulations=self._num_simulations,
         num_actions=self._num_actions,
         discount=self._discount,
