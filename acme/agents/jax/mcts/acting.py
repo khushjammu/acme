@@ -29,6 +29,8 @@ import jax
 import numpy as np
 import search
 
+import time
+
 # Useful type aliases.
 RecurrentState = TypeVar('RecurrentState')
 
@@ -126,6 +128,8 @@ class MCTSActor(core.Actor):
     if self._model.needs_reset:
       self._model.reset(observation)
 
+
+    t = time.time()
     root = search.mcts(
         observation,
         model=self._model,
@@ -135,7 +139,7 @@ class MCTSActor(core.Actor):
         num_actions=self._num_actions,
         discount=self._discount,
     )
-
+    print(f"mcts took: {time.time()-t}")
     probs = search.visit_count_policy(root)
     action = np.int32(np.random.choice(self._actions, p=probs))
 
