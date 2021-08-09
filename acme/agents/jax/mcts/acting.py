@@ -123,7 +123,7 @@ class MCTSActor(core.Actor):
       self._model.reset(observation)
 
 
-    t = time.time()
+    # t = time.time()
     root = search.mcts(
         observation,
         model=self._model,
@@ -133,7 +133,7 @@ class MCTSActor(core.Actor):
         num_actions=self._num_actions,
         discount=self._discount,
     )
-    print(f"mcts took: {time.time()-t}")
+    # print(f"mcts took: {time.time()-t}")
     probs = search.visit_count_policy(root)
     action = np.int32(np.random.choice(self._actions, p=probs))
 
