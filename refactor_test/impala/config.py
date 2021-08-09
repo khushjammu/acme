@@ -10,7 +10,8 @@ class IMPALAConfig:
   seed: int = 0
 
   # Loss options
-  batch_size: int = 16
+  batch_size: int = 16 # 256
+  min_replay_size: int = 1_000  # Minimum replay size.
   sequence_length: int = 20
   sequence_period: int = 20
   discount: float = 0.99
