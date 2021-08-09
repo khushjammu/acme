@@ -115,7 +115,7 @@ class MCTSLoss(LossFn):
       r_t=clipped_reward,
       discount_t=scaled_discount,
       v_t=target_value,
-      labels=transitions.extras["pi_t"],
+      labels=transitions.extras["pi"],
       logits=logits
       )
     print("loss:", loss)
