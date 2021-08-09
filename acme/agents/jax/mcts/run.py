@@ -95,12 +95,14 @@ learner = MCTSLearner(
   # logger: Optional[loggers.Logger] = None,
   )
 
-
+def policy(params: networks_lib.Params,
+           observation: jnp.ndarray) -> jnp.ndarray:
+  return network.apply(params, observation)
 
 # Construct the agent.
 
 actor = MCTSActor(
-    policy=network,
+    policy=policy,
     random_key=key_actor,
     variable_client=VariableClient(learner, ''),
     num_actions=spec.actions.num_values,
