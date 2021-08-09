@@ -21,7 +21,7 @@ from acme.jax import utils
 from acme.jax import networks as networks_lib
 from acme.agents import replay
 from acme.agents.jax import actors
-from acme.agents.jax.impala import learning
+from acme.agents.jax.impala import acting, learning
 
 from acme.adders import reverb as adders
 from typing import Generic, List, Optional, Sequence, TypeVar
