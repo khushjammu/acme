@@ -122,7 +122,6 @@ class MCTSActor(core.Actor):
     if self._model.needs_reset:
       self._model.reset(observation)
 
-
     # t = time.time()
     root = search.mcts(
         observation,

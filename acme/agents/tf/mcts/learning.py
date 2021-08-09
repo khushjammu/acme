@@ -51,11 +51,12 @@ class AZLearner(acme.Learner):
     self._variables = network.trainable_variables
     self._discount = np.float32(discount)
 
-  @tf.function
+  # @tf.function
   def _step(self) -> tf.Tensor:
     """Do a step of SGD on the loss."""
 
     inputs = next(self._iterator)
+    print("inputs:", inputs)
     o_t, _, r_t, d_t, o_tp1, extras = inputs.data
     pi_t = extras['pi']
 
@@ -74,6 +75,8 @@ class AZLearner(acme.Learner):
 
       # Compute gradients.
       loss = tf.reduce_mean(value_loss + policy_loss)
+      print("loss:", loss)
+      import sys; sys.exit(-1)
       gradients = tape.gradient(loss, self._network.trainable_variables)
 
     self._optimizer.apply(gradients, self._network.trainable_variables)
