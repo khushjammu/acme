@@ -40,7 +40,8 @@ class MCTSConfig:
   max_replay_size: int = 1_000_000  # Maximum replay size.
   replay_table_name: str = adders_reverb.DEFAULT_PRIORITY_TABLE
   importance_sampling_exponent: float = 0.2  # Importance sampling for replay.
-  priority_exponent: float = 0.6  # Priority exponent for replay.
+  # priority_exponent: float = 0.6  # Priority exponent for replay.
+  priority_exponent: float = 1.
   prefetch_size: int = 4  # Prefetch size for reverb replay performance.
   samples_per_insert: float = 32  # Ratio of learning samples to insert.
   # Rate to be used for the SampleToInsertRatio rate limitter tolerance.
