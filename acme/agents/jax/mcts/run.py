@@ -29,7 +29,7 @@ import jax
 
 from acme.jax.variable_utils import VariableClient
 
-from learner import MCTSLoss, MCTSLearner
+from learning import MCTSLoss, MCTSLearner
 from acting import MCTSActor
 
 import config
