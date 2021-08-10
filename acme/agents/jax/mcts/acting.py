@@ -102,8 +102,8 @@ class MCTSActor(core.Actor):
       return utils.squeeze_batch_dim(logits), utils.squeeze_batch_dim(value)
 
     # this policy is the state-value model
-    self._policy = jax.jit(batched_policy, backend=backend)
-    # self._policy = batched_policy
+    # self._policy = jax.jit(batched_policy, backend=backend)
+    self._policy = batched_policy
 
     def forward(observation):
       logits, value = self._policy(self._client.params, observation)
@@ -144,15 +144,6 @@ class MCTSActor(core.Actor):
     # Save the policy probs so that we can add them to replay in `observe()`.
     self._probs = probs.astype(np.float32)
 
-    # result, self._random_key = self._policy(self._client.params,
-    #                                         self._random_key, observation)
-
-
-    # if self._has_extras:
-    #   action, self._extras = result
-    # else:
-    #   action = result
-    # return utils.to_numpy(action)
     return action
 
   def observe_first(self, timestep: dm_env.TimeStep):
