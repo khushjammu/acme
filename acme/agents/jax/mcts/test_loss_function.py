@@ -54,6 +54,7 @@ pi_t = np.asarray(
  [0.34, 0.34, 0.32],
  [0.34, 0.32, 0.34]], dtype=np.float32)
 
+# (1.3484426
 loss_actual = 1.3484426
 print("definitions are ok")
 # loss function to be vectorised
@@ -82,7 +83,7 @@ batch_loss_fn = jax.vmap(stonks)
 # print("pi_t", pi_t)
 # print("logits", logits)
 
-batch_loss = batch_loss_fn(
+batch_loss, value_loss, policy_loss = batch_loss_fn(
   v_tm1=value,
   r_t=r_t,
   discount_t=scaled_discount,
@@ -98,11 +99,11 @@ def custom(r, d, tv, v, pt, lg):
 		logits=lg
 		)
 
-	return value_loss+policy_loss
+	return value_loss+policy_loss, value_loss, policy_loss
 
 loss = jnp.mean(batch_loss)
-custom_loss = jax.vmap(custom)(r_t, scaled_discount, target_value, value, pi_t, logits)
-print("custom loss:", jnp.mean(custom_loss))
+custom_loss, val, pol = jax.vmap(custom)(r_t, scaled_discount, target_value, value, pi_t, logits)
+print("custom loss:", jnp.mean(custom_loss), jnp.mean(val), jnp.mean(pol))
 print("calculated loss:", loss)
 print("actual loss:", loss_actual)
 print("disrepency:", loss_actual-loss)
