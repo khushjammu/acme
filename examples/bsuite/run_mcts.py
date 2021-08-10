@@ -60,6 +60,7 @@ def make_env_and_model(
     )
   # environment = csv_logging.wrap_environment(
   #     raw_env, bsuite_id, results_dir, overwrite)
+  environment = raw_env
   environment = wrappers.SinglePrecisionWrapper(environment)
   # model = simulator.Simulator(environment)
   return environment, model
