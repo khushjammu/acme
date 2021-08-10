@@ -31,7 +31,7 @@ import optax
 import reverb
 import rlax
 import typing_extensions
-from copy import deepcopy
+import copy
 
 
 class ReverbUpdate(NamedTuple):
