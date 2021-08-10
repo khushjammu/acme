@@ -55,7 +55,7 @@ pi_t = np.asarray(
  [0.34, 0.32, 0.34]], dtype=np.float32)
 
 loss_actual = 1.3484426
-
+print("definitions are ok")
 # loss function to be vectorised
 def stonks(v_tm1, r_t, discount_t, v_t, labels, logits):
 	value_loss = rlax.td_learning(
