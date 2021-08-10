@@ -91,18 +91,18 @@ batch_loss = batch_loss_fn(
   logits=logits
   )
 
-def custom():
-	value_loss = jnp.square(r_t + scaled_discount * target_value - value)
+def custom(r, d, tv, v, pt, lg):
+	value_loss = jnp.square(r + d * tv - v)
 	policy_loss = rlax.categorical_cross_entropy(
-		labels=pi_t,
-		logits=logits
+		labels=pt,
+		logits=lg
 		)
 
 	print("custom loss:", jnp.mean(value_loss+policy_loss))
 
 
 loss = jnp.mean(batch_loss)
-custom()
+custom_loss = jax.vmap(custom)(r_t, scaled_discount, target, value, pi_t, logits)
 print("calculated loss:", loss)
 print("actual loss:", loss_actual)
 print("disrepency:", loss_actual-loss)
