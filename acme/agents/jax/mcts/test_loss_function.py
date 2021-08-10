@@ -1,3 +1,10 @@
+"""
+Overall conclusion is that the loss function works fine. There is
+some disrepency, but it's most likely due to numerical imprecision
+(on the order of ~1e-5).
+"""
+
+
 import rlax
 import numpy as np
 import jax

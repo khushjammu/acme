@@ -118,7 +118,7 @@ class MCTSLoss(LossFn):
       )
 
     loss = jnp.mean(batch_loss)
-    print("loss:", loss)
+    # print("loss:", loss)
     reverb_update = ReverbUpdate(
         keys=keys, priorities=jnp.abs(batch_loss).astype(jnp.float64))
     extra = LossExtra(metrics={}, reverb_update=reverb_update)
