@@ -26,6 +26,7 @@ from acme.agents.tf import mcts
 from acme.agents.tf.mcts import models
 from acme.agents.tf.mcts.models import mlp
 from acme.agents.tf.mcts.models import simulator
+# from acme.agents.jax.mcts.models import simulator
 from acme.tf import networks
 import bsuite
 from bsuite.logging import csv_logging
@@ -48,6 +49,7 @@ def make_env_and_model(
   """Create environment and corresponding model (learned or simulator)."""
   raw_env = bsuite.load_from_id(bsuite_id)
   if FLAGS.simulator:
+    # pass
     model = simulator.Simulator(raw_env)  # pytype: disable=attribute-error
   else:
     model = mlp.MLPModel(
@@ -59,7 +61,7 @@ def make_env_and_model(
   environment = csv_logging.wrap_environment(
       raw_env, bsuite_id, results_dir, overwrite)
   environment = wrappers.SinglePrecisionWrapper(environment)
-
+  # model = simulator.Simulator(environment)
   return environment, model
 
 
