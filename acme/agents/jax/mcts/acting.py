@@ -105,6 +105,7 @@ class MCTSActor(core.Actor):
 
     def forward(observation):
       logits, value = self._policy(self._client.params, observation)
+      print("logits:", type(logits))
       return logits, value
     self._forward = forward
 
