@@ -214,7 +214,16 @@ class MCTSLearner(acme.Learner):
     # print("learner: stepping")
     batch = next(self._data_iterator)
     # print("learner: fetched batch")
+    old = copy.deepcopy(self._state.params)
     self._state, extra = self._sgd_step(self._state, batch)
+    new = copy.deepcopy(self._state.params)
+
+    if old == new:
+      print("doesn't update")
+    else:
+      print("updated!")
+
+    import sys; sys.exit(-1)
 
     if self._replay_client:
       reverb_update = extra.reverb_update._replace(keys=batch.info.key)
