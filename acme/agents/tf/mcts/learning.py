@@ -83,6 +83,8 @@ class AZLearner(acme.Learner):
 
       # Compute gradients.
       loss = tf.reduce_mean(value_loss + policy_loss)
+      print("value_loss:", tf.reduce_mean(value_loss))
+      print("policy_loss:", tf.reduce_mean(policy_loss))
       print("loss:", loss)
       import sys; sys.exit(-1)
       gradients = tape.gradient(loss, self._network.trainable_variables)
