@@ -100,7 +100,7 @@ class MCTSLoss(LossFn):
 
     logits, value = network.apply(params, transitions.observation)
     _, target_value = network.apply(params, transitions.next_observation)
-    target_value = jax.lax.stop_gradient(target_value)
+    # target_value = jax.lax.stop_gradient(target_value)
 
     scaled_discount = (transitions.discount * self.discount).astype(jnp.float32)
     clipped_reward = jnp.clip(transitions.reward, -self.max_abs_reward,
