@@ -86,7 +86,6 @@ key_learner, key_actor = jax.random.split(jax.random.PRNGKey(config.seed))
 
 loss_fn = MCTSLoss()
 # optimizer = optax.adam(1e-3)
-optimizer = optax.adam(1e-4)
 
 extra_spec = {
     'pi':
@@ -105,7 +104,7 @@ reverb_replay = replay.make_reverb_prioritized_nstep_replay(
     max_replay_size=10000,
     min_replay_size=1,
     # min_replay_size=config.min_replay_size,
-    priority_exponent=config.priority_exponent,
+    # priority_exponent=config.priority_exponent,
     discount=config.discount,
 )
 
@@ -150,7 +149,7 @@ class MCTS(agent.Agent):
     super().__init__(
         actor=actor,
         learner=learner,
-        min_observations=20,
+        min_observations=10,
         observations_per_step=1,
     )
 
