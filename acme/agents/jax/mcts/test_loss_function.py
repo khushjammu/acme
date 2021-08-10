@@ -92,7 +92,7 @@ batch_loss = batch_loss_fn(
   )
 
 def custom():
-	value_loss = tf.square(r_t + scaled_discount * target_value - value)
+	value_loss = jnp.square(r_t + scaled_discount * target_value - value)
 	policy_loss = rlax.categorical_cross_entropy(
 		labels=labels,
 		logits=logits
