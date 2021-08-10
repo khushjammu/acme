@@ -169,4 +169,5 @@ class MCTSActor(core.Actor):
       # self._adder.add(action, next_timestep, extras=self._extras)
 
   def update(self, wait: bool = False):
+    print(f"actor updating, wait={wait}")
     self._client.update(wait)
