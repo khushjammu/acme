@@ -75,6 +75,13 @@ def stonks(v_tm1, r_t, discount_t, v_t, labels, logits):
 
 batch_loss_fn = jax.vmap(stonks)
 
+print("value", value)
+print("r_t", r_t)
+print("scaled_discount", scaled_discount)
+print("target_value", target_value)
+print("pi_t", pi_t)
+print("logits", logits)
+
 batch_loss = batch_loss_fn(
   v_tm1=value,
   r_t=r_t,
