@@ -83,7 +83,7 @@ batch_loss_fn = jax.vmap(stonks)
 # print("pi_t", pi_t)
 # print("logits", logits)
 
-batch_loss, value_loss, policy_loss = batch_loss_fn(
+batch_loss = batch_loss_fn(
   v_tm1=value,
   r_t=r_t,
   discount_t=scaled_discount,
