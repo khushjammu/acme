@@ -164,7 +164,7 @@ class EnvironmentLoop(core.Worker):
       episode_count += 1
       step_count += result['episode_length']
       # Log the given results.
-      self._logger.write(result)
+      # self._logger.write(result)
 
 
 def _generate_zeros_from_spec(spec: specs.Array) -> np.ndarray:

@@ -58,8 +58,8 @@ def make_env_and_model(
         batch_size=16,
         hidden_sizes=(50,),
     )
-  environment = csv_logging.wrap_environment(
-      raw_env, bsuite_id, results_dir, overwrite)
+  # environment = csv_logging.wrap_environment(
+  #     raw_env, bsuite_id, results_dir, overwrite)
   environment = wrappers.SinglePrecisionWrapper(environment)
   # model = simulator.Simulator(environment)
   return environment, model
