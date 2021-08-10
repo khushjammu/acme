@@ -98,12 +98,11 @@ def custom(r, d, tv, v, pt, lg):
 		logits=lg
 		)
 
-	return jnp.mean(value_loss+policy_loss)
-
+	return value_loss+policy_loss
 
 loss = jnp.mean(batch_loss)
 custom_loss = jax.vmap(custom)(r_t, scaled_discount, target_value, value, pi_t, logits)
-print("custom loss:", custom_loss)
+print("custom loss:", jnp.mean(custom_loss))
 print("calculated loss:", loss)
 print("actual loss:", loss_actual)
 print("disrepency:", loss_actual-loss)
