@@ -50,6 +50,7 @@ def make_env_and_model(
   raw_env = bsuite.load_from_id(bsuite_id)
   if FLAGS.simulator:
     # pass
+    print("simulator")
     model = simulator.Simulator(raw_env)  # pytype: disable=attribute-error
   else:
     model = mlp.MLPModel(
