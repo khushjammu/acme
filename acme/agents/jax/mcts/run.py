@@ -61,7 +61,7 @@ print(spec)
 #     episode_length=10)
 # spec = specs.make_environment_spec(environment)
 
-model = simulator.Simulator(environment)
+env_model = simulator.Simulator(environment)
 
 def network(x):
   model = hk.Sequential([
@@ -133,7 +133,7 @@ actor = MCTSActor(
     num_actions=spec.actions.num_values,
     num_simulations=50,
     discount=0.99,
-    model=model, # todo: sort out environment model
+    model=env_model, # todo: sort out environment model
     adder=reverb_replay.adder
     # adder: Optional[adders.Adder] = None,
 )
