@@ -67,6 +67,8 @@ class EnvironmentLoop(core.Worker):
     self._should_update = should_update
     self._should_wait = should_wait
 
+    if self._should_wait: print("FORCING WAIT")
+
   def run_episode(self) -> loggers.LoggingData:
     """Run one episode.
 

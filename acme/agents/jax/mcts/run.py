@@ -165,5 +165,5 @@ myagent = MCTS(actor, learner)
 
 # Try running the environment loop. We have no assertions here because all
 # we care about is that the agent runs without raising any errors.
-loop = acme.EnvironmentLoop(environment, myagent)
+loop = acme.EnvironmentLoop(environment, myagent, should_wait=True)
 loop.run(num_episodes=1000)

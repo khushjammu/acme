@@ -76,7 +76,7 @@ class Agent(core.Actor, core.VariableSource):
     self._num_observations += 1
     self._actor.observe(action, next_timestep)
 
-  def update(self):
+  def update(self, wait=False):
     num_steps = _calculate_num_learner_steps(
         num_observations=self._num_observations,
         min_observations=self._min_observations,
@@ -87,7 +87,7 @@ class Agent(core.Actor, core.VariableSource):
       self._learner.step()
     if num_steps > 0:
       # Update the actor weights when learner updates.
-      self._actor.update()
+      self._actor.update(wait=wait)
 
   def get_variables(self, names: List[str]) -> List[List[np.ndarray]]:
     return self._learner.get_variables(names)

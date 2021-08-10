@@ -101,7 +101,7 @@ def main(_):
   )
 
   # Run the environment loop.
-  loop = acme.EnvironmentLoop(environment, agent)
+  loop = acme.EnvironmentLoop(environment, agent, should_wait=True)
   loop.run(num_episodes=environment.bsuite_num_episodes)  # pytype: disable=attribute-error
 
 
