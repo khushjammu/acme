@@ -216,11 +216,6 @@ class MCTSLearner(acme.Learner):
     # print("learner: fetched batch")
     self._state, extra = self._sgd_step(self._state, batch)
 
-    print("old:", old)
-    print("new:", new)
-
-    import sys; sys.exit(-1)
-
     if self._replay_client:
       reverb_update = extra.reverb_update._replace(keys=batch.info.key)
       self._async_priority_updater.put(reverb_update)
