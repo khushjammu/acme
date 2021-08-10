@@ -29,6 +29,8 @@ import jax
 import numpy as np
 import search
 
+from scipy import special
+
 import time
 
 # Useful type aliases.
@@ -106,7 +108,10 @@ class MCTSActor(core.Actor):
     def forward(observation):
       logits, value = self._policy(self._client.params, observation)
       print("logits:", type(logits))
-      return logits, value
+      logits = np.asarray(logits)
+      value = np.asarray(value).item()
+      probs = special.softmax(logits)
+      return probs, value
     self._forward = forward
 
     self._adder = adder
