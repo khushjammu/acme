@@ -107,7 +107,6 @@ class MCTSActor(core.Actor):
 
     def forward(observation):
       logits, value = self._policy(self._client.params, observation)
-      print("logits:", type(logits))
       logits = np.asarray(logits)
       value = np.asarray(value).item()
       probs = special.softmax(logits)
