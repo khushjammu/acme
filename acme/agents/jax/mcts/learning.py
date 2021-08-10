@@ -218,7 +218,7 @@ class MCTSLearner(acme.Learner):
     self._state, extra = self._sgd_step(self._state, batch)
     new = copy.deepcopy(self._state.params)
 
-    if old == new:
+    if (old == new).all():
       print("doesn't update")
     else:
       print("updated!")
