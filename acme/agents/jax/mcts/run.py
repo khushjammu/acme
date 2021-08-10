@@ -85,7 +85,7 @@ key_learner, key_actor = jax.random.split(jax.random.PRNGKey(config.seed))
 
 
 loss_fn = MCTSLoss()
-# optimizer = optax.adam(1e-3)
+optimizer = optax.adam(1e-3)
 
 extra_spec = {
     'pi':
@@ -93,7 +93,7 @@ extra_spec = {
             shape=(spec.actions.num_values,), dtype=np.float32)
 }
 
-print("FUCK YOU KHUSH BATCH SIZE:", config.batch_size)
+print("BATCH SIZE:", config.batch_size)
 
 reverb_replay = replay.make_reverb_prioritized_nstep_replay(
     environment_spec=spec,
