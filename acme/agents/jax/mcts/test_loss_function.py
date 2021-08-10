@@ -75,12 +75,12 @@ def stonks(v_tm1, r_t, discount_t, v_t, labels, logits):
 
 batch_loss_fn = jax.vmap(stonks)
 
-print("value", value)
-print("r_t", r_t)
-print("scaled_discount", scaled_discount)
-print("target_value", target_value)
-print("pi_t", pi_t)
-print("logits", logits)
+# print("value", value)
+# print("r_t", r_t)
+# print("scaled_discount", scaled_discount)
+# print("target_value", target_value)
+# print("pi_t", pi_t)
+# print("logits", logits)
 
 batch_loss = batch_loss_fn(
   v_tm1=value,
@@ -98,11 +98,12 @@ def custom(r, d, tv, v, pt, lg):
 		logits=lg
 		)
 
-	print("custom loss:", jnp.mean(value_loss+policy_loss))
+	return jnp.mean(value_loss+policy_loss)
 
 
 loss = jnp.mean(batch_loss)
-custom_loss = jax.vmap(custom)(r_t, scaled_discount, target, value, pi_t, logits)
+custom_loss = jax.vmap(custom)(r_t, scaled_discount, target_value, value, pi_t, logits)
+print("custom loss:", custom_loss)
 print("calculated loss:", loss)
 print("actual loss:", loss_actual)
 print("disrepency:", loss_actual-loss)
